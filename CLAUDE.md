@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues are tracked as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+Issues are tracked as GitHub Issues in `RichardHoa/ADL-final-project` (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
