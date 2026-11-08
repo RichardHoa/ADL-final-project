@@ -3,70 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Handbook Chatbot</title>
-  <style>
-    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-    body { max-inline-size: 48rem; margin-inline: auto; padding: 1rem; }
-    textarea { inline-size: 100%; min-block-size: 4rem; font: inherit; }
-    #answer { white-space: pre-wrap; }
-    #error { color: #c62828; }
-  </style>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <h1>Handbook Chatbot</h1>
-  <form id="ask">
-    <label for="question">Question</label>
-    <textarea id="question" required></textarea>
-    <button type="submit">Ask</button>
-  </form>
-  <p id="status" role="status"></p>
-  <p id="error" role="alert"></p>
-  <div id="answer"></div>
-  <ol id="citations"></ol>
-  <script>
-    const form = document.getElementById("ask");
-    const status = document.getElementById("status");
-    const error = document.getElementById("error");
-    const answer = document.getElementById("answer");
-    const citations = document.getElementById("citations");
-    let conversationId = null;
+  <div class="app">
+    <aside class="sidebar" aria-label="Conversations and documents">
+      <header class="sidebar__header">
+        <h1 class="brand">Handbook Chatbot</h1>
+        <button type="button" class="button button--primary" id="new-chat">New chat</button>
+      </header>
 
-    async function request(url, options) {
-      const response = await fetch(url, options);
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
-      return body;
-    }
+      <section class="panel" aria-labelledby="conversations-heading">
+        <h2 class="panel__title" id="conversations-heading">Conversations</h2>
+        <ul class="list" id="conversations"></ul>
+        <p class="hint" id="conversations-empty" hidden>No conversations yet.</p>
+      </section>
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const question = document.getElementById("question").value.trim();
-      if (!question) return;
-      status.textContent = "Thinking…";
-      error.textContent = "";
-      answer.textContent = "";
-      citations.replaceChildren();
-      try {
-        if (conversationId === null) {
-          conversationId = (await request("/api/conversations", { method: "POST" })).id;
-        }
-        const message = await request(`/api/conversations/${conversationId}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
-        });
-        answer.textContent = message.content;
-        for (const citation of message.citations) {
-          const item = document.createElement("li");
-          item.textContent = `${citation.document}, page ${citation.page}`;
-          citations.append(item);
-        }
-      } catch (failure) {
-        error.textContent = failure.message;
-      } finally {
-        status.textContent = "";
-      }
-    });
-  </script>
+      <section class="panel" aria-labelledby="documents-heading">
+        <h2 class="panel__title" id="documents-heading">Documents</h2>
+        <ul class="list" id="documents"></ul>
+        <p class="hint" id="documents-empty" hidden>No documents ingested yet.</p>
+        <label class="button upload">
+          Upload PDF or TXT
+          <input type="file" class="upload__input" id="upload" accept=".pdf,.txt,application/pdf,text/plain">
+        </label>
+        <p class="hint" id="upload-status" role="status"></p>
+        <p class="error" id="upload-error" role="alert"></p>
+      </section>
+    </aside>
+
+    <main class="chat">
+      <h2 class="chat__title" id="chat-title">New chat</h2>
+      <ol class="messages" id="messages" aria-live="polite" aria-labelledby="chat-title"></ol>
+      <p class="hint chat__empty" id="chat-empty">Ask a question about the documents in the knowledge base.</p>
+      <p class="thinking" id="thinking" role="status" hidden>Thinking…</p>
+      <form class="composer" id="composer">
+        <label class="visually-hidden" for="question">Question</label>
+        <textarea class="composer__input" id="question" rows="2" placeholder="Ask about the handbook…" required></textarea>
+        <button type="submit" class="button button--primary" id="ask">Ask</button>
+      </form>
+    </main>
+  </div>
 </body>
 </html>

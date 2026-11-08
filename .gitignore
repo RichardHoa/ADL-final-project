@@ -1,0 +1,21 @@
+# Runtime storage (knowledge base, chat history, uploads)
+storage/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Demo videos (too large for git)
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+
+.DS_Store

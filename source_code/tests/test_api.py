@@ -48,3 +48,25 @@ def test_question_is_answered_with_citations_and_conversation_reloads(client, tm
     assert [m["role"] for m in reloaded["messages"]] == ["user", "assistant"]
     assert reloaded["messages"][0]["content"] == "How many credits are required for graduation?"
     assert reloaded["messages"][1]["citations"] == answer["citations"]
+
+
+def test_conversations_are_listed_most_recently_active_first_and_can_be_deleted(client):
+    first = client.post("/api/conversations").get_json()
+    second = client.post("/api/conversations").get_json()
+    client.post(f"/api/conversations/{first['id']}/messages", json={"question": "What is the capstone?"})
+
+    listed = client.get("/api/conversations").get_json()
+    assert [c["id"] for c in listed] == [first["id"], second["id"]]
+
+    assert client.delete(f"/api/conversations/{first['id']}").status_code == 204
+    assert [c["id"] for c in client.get("/api/conversations").get_json()] == [second["id"]]
+    assert client.get(f"/api/conversations/{first['id']}").status_code == 404
+
+
+def test_chat_page_and_its_assets_are_served(client):
+    page = client.get("/")
+
+    assert page.status_code == 200
+    assert b"/static/app.js" in page.data and b"/static/app.css" in page.data
+    assert client.get("/static/app.js").status_code == 200
+    assert client.get("/static/app.css").status_code == 200
