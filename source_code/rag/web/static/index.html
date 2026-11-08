@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handbook Chatbot</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { max-inline-size: 48rem; margin-inline: auto; padding: 1rem; }
+    textarea { inline-size: 100%; min-block-size: 4rem; font: inherit; }
+    #answer { white-space: pre-wrap; }
+    #error { color: #c62828; }
+  </style>
+</head>
+<body>
+  <h1>Handbook Chatbot</h1>
+  <form id="ask">
+    <label for="question">Question</label>
+    <textarea id="question" required></textarea>
+    <button type="submit">Ask</button>
+  </form>
+  <p id="status" role="status"></p>
+  <p id="error" role="alert"></p>
+  <div id="answer"></div>
+  <ol id="citations"></ol>
+  <script>
+    const form = document.getElementById("ask");
+    const status = document.getElementById("status");
+    const error = document.getElementById("error");
+    const answer = document.getElementById("answer");
+    const citations = document.getElementById("citations");
+    let conversationId = null;
+
+    async function request(url, options) {
+      const response = await fetch(url, options);
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
+      return body;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const question = document.getElementById("question").value.trim();
+      if (!question) return;
+      status.textContent = "Thinking…";
+      error.textContent = "";
+      answer.textContent = "";
+      citations.replaceChildren();
+      try {
+        if (conversationId === null) {
+          conversationId = (await request("/api/conversations", { method: "POST" })).id;
+        }
+        const message = await request(`/api/conversations/${conversationId}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        answer.textContent = message.content;
+        for (const citation of message.citations) {
+          const item = document.createElement("li");
+          item.textContent = `${citation.document}, page ${citation.page}`;
+          citations.append(item);
+        }
+      } catch (failure) {
+        error.textContent = failure.message;
+      } finally {
+        status.textContent = "";
+      }
+    });
+  </script>
+</body>
+</html>

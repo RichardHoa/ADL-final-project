@@ -1,0 +1,44 @@
+name: handbook-rag
+
+services:
+  ollama:
+    image: ollama/ollama:0.12.6
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  ollama-init:
+    image: ollama/ollama:0.12.6
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull ${EMBED_MODEL:-nomic-embed-text} && ollama pull ${LLM_MODEL:-qwen2.5:0.5b}"]
+    restart: "no"
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:0.5b}
+      STORAGE_DIR: /storage
+      TOP_K: ${TOP_K:-4}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../storage:/storage
+      - ../Dataset:/data:ro
+
+volumes:
+  ollama-models:
