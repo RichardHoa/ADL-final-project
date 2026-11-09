@@ -1,14 +1,14 @@
 {
   "document": "CS Major Handbook_2026-2027.pdf",
   "questions": [
-    {"question": "How many credits are required for the Computer Science major requirements?", "pages": [2, 8]},
+    {"question": "How many credits are required for the Computer Science major requirements?", "pages": [8]},
     {"question": "What minimum major GPA do I need to enroll in Capstone I?", "pages": [10]},
     {"question": "What are the prerequisites for CS302 Algorithms & Theory of Computing?", "pages": [15, 20]},
     {"question": "How many courses must I finish before I can declare Computer Science as my major?", "pages": [8]},
     {"question": "How many courses do I need to complete a concentration?", "pages": [12, 13]},
     {"question": "Which programming language is mainly used in CS 201?", "pages": [17]},
     {"question": "Which courses count toward the Artificial Intelligence concentration?", "pages": [13]},
-    {"question": "How many credits is the Computer Science minor?", "pages": [2, 8]},
+    {"question": "How many credits is the Computer Science minor?", "pages": [8]},
     {"question": "What topics does the Operating Systems course cover?", "pages": [19]},
     {"question": "What jobs have Computer Science graduates gone on to?", "pages": [6]}
   ]
