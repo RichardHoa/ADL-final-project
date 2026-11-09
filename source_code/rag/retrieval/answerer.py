@@ -14,7 +14,7 @@ def build_prompt(question, chunks):
     return f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
 
 
-def answer(question, knowledge_base, ollama, top_k):
+def answer(question, knowledge_base, ollama, top_k, min_score):
     """Run one Generation. Ollama failures are recorded in "error" rather than raised."""
     generation = {
         "question": question,
@@ -26,7 +26,7 @@ def answer(question, knowledge_base, ollama, top_k):
     }
     started = time.monotonic()
     try:
-        generation["chunks"] = knowledge_base.search(question, top_k)
+        generation["chunks"] = knowledge_base.search(question, top_k, min_score)
         generation["user_prompt"] = build_prompt(question, generation["chunks"])
         generation["answer"] = ollama.generate(SYSTEM_PROMPT, generation["user_prompt"]).strip()
     except OllamaError as error:

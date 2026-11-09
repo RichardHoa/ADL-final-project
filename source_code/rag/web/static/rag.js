@@ -44,11 +44,18 @@ function chunkText(text) {
   return details;
 }
 
+function scoreParts(result) {
+  return [
+    element("span", "score", result.score.toFixed(3)),
+    element("span", "", `dense ${result.similarity.toFixed(3)} · keyword ${result.keyword.toFixed(3)}`),
+  ];
+}
+
 function resultItem(result) {
   const item = element("li", "result");
   const header = element("div", "result__header");
   header.append(
-    element("span", "score", result.similarity.toFixed(3)),
+    ...scoreParts(result),
     element("span", "", `${result.document}, page ${result.page} · chunk #${result.index}`),
   );
   item.append(header, chunkText(result.text));
@@ -70,7 +77,7 @@ async function search(event) {
       body: JSON.stringify({ query, threshold, max_results: Number(elements.searchMax.value) }),
     });
     elements.searchResults.replaceChildren(...results.map(resultItem));
-    elements.searchStatus.textContent = `${results.length} chunk(s) at or above similarity ${threshold.toFixed(2)}.`;
+    elements.searchStatus.textContent = `${results.length} chunk(s) at or above score ${threshold.toFixed(2)}.`;
   } catch (failure) {
     elements.searchStatus.textContent = "";
     elements.searchError.textContent = failure.message;

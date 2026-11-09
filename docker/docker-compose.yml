@@ -33,7 +33,8 @@ services:
       EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:0.5b}
       STORAGE_DIR: /storage
-      TOP_K: ${TOP_K:-4}
+      TOP_K: ${TOP_K:-3}
+      MIN_SCORE: ${MIN_SCORE:-0.4}
     ports:
       - "5000:5000"
     volumes:

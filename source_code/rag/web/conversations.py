@@ -42,7 +42,9 @@ def post_message(conversation_id):
     question = ((request.get_json(silent=True) or {}).get("question") or "").strip()
     if not question:
         return jsonify(error="Question must not be empty."), 400
-    generation = answer(question, services().knowledge_base, services().ollama, services().top_k)
+    generation = answer(
+        question, services().knowledge_base, services().ollama, services().top_k, services().min_score
+    )
     if generation["error"]:
         store.log_generation(conversation_id, generation, services().llm_model)
         raise OllamaError(generation["error"])

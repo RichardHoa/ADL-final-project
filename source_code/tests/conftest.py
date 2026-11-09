@@ -61,5 +61,6 @@ def fake_ollama():
 
 @pytest.fixture
 def client(tmp_path, fake_ollama):
-    app = create_app(storage_dir=tmp_path / "storage", ollama=fake_ollama)
+    # The fake embeddings aren't semantic, so most tests turn the minimum score off; test_rag covers it.
+    app = create_app(storage_dir=tmp_path / "storage", ollama=fake_ollama, min_score=0)
     return app.test_client()

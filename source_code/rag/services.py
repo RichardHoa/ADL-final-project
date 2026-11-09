@@ -19,9 +19,10 @@ class Services:
     llm_model: str
     uploads_dir: Path
     top_k: int
+    min_score: float
 
 
-def build_services(storage_dir=None, ollama=None, top_k=None):
+def build_services(storage_dir=None, ollama=None, top_k=None, min_score=None):
     config = load_config()
     storage_dir = Path(storage_dir or config.storage_dir)
     uploads_dir = storage_dir / "uploads"
@@ -37,4 +38,5 @@ def build_services(storage_dir=None, ollama=None, top_k=None):
         llm_model=config.llm_model,
         uploads_dir=uploads_dir,
         top_k=top_k or config.top_k,
+        min_score=config.min_score if min_score is None else min_score,
     )

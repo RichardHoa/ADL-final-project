@@ -20,15 +20,15 @@
     </header>
 
     <section class="card" aria-labelledby="search-heading">
-      <h2 class="panel__title" id="search-heading">Similarity search</h2>
+      <h2 class="panel__title" id="search-heading">Hybrid search</h2>
       <form class="toolbar" id="search-form">
         <label class="field field--grow">
           <span class="field__label">Query</span>
           <input class="input" type="search" id="search-query" placeholder="e.g. How many credits are required?" required>
         </label>
         <label class="field">
-          <span class="field__label">Similarity threshold: <output id="threshold-value">0.50</output></span>
-          <input class="range" type="range" id="search-threshold" min="0" max="1" step="0.01" value="0.5">
+          <span class="field__label">Minimum score: <output id="threshold-value">0.40</output></span>
+          <input class="range" type="range" id="search-threshold" min="0" max="1" step="0.01" value="0.4">
         </label>
         <label class="field">
           <span class="field__label">Max results</span>

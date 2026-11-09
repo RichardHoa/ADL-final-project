@@ -539,6 +539,11 @@
 
   .composer__input:focus-visible { outline: none; }
 
+  .composer__note {
+    margin-block-start: var(--space-2);
+    text-align: center;
+  }
+
   /* Inspector pages (RAG, Logging) */
 
   .page {

@@ -44,14 +44,16 @@
     <main class="chat">
       <h2 class="chat__title" id="chat-title">New chat</h2>
       <ol class="messages" id="messages" aria-live="polite" aria-labelledby="chat-title"></ol>
-      <p class="hint chat__empty" id="chat-empty">Ask a question about the documents in the knowledge base.</p>
+      <p class="hint chat__empty" id="chat-empty">Ask a question about the documents in the knowledge base.<br>
+        Each question is answered on its own, so include every detail it needs, such as the course code.</p>
       <p class="thinking" id="thinking" role="status" hidden>Thinking…</p>
       <form class="composer" id="composer">
         <label class="visually-hidden" for="question">Question</label>
         <div class="composer__box">
-          <textarea class="composer__input" id="question" rows="2" placeholder="Ask about the handbook…" required></textarea>
+          <textarea class="composer__input" id="question" rows="2" placeholder="Ask one complete question, e.g. What are the prerequisites for CS302?" required aria-describedby="composer-note"></textarea>
           <button type="submit" class="button button--primary" id="ask">Ask</button>
         </div>
+        <p class="hint composer__note" id="composer-note">One question at a time: the chatbot doesn't see your earlier questions, so follow-ups like "what about it?" won't work.</p>
       </form>
     </main>
   </div>

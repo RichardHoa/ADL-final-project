@@ -34,7 +34,7 @@ def test_documents_ingested_while_the_app_is_running_are_searchable(tmp_path, fa
     folder.mkdir()
     make_pdf(folder / "handbook.pdf", ["The capstone project is CS499.", "Students need 128 credits."])
     storage = tmp_path / "storage"
-    client = create_app(storage_dir=storage, ollama=fake_ollama).test_client()
+    client = create_app(storage_dir=storage, ollama=fake_ollama, min_score=0).test_client()
     conversation = client.post("/api/conversations").get_json()
     client.post(f"/api/conversations/{conversation['id']}/messages", json={"question": "Anything indexed?"})
 

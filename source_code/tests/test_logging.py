@@ -49,7 +49,7 @@ def test_each_answer_records_its_generation(client, tmp_path):
 
 
 def test_failed_generation_is_recorded_without_saving_messages(tmp_path):
-    client = create_app(storage_dir=tmp_path / "storage", ollama=BrokenModel()).test_client()
+    client = create_app(storage_dir=tmp_path / "storage", ollama=BrokenModel(), min_score=0).test_client()
     upload(client, make_pdf(tmp_path / "handbook.pdf", HANDBOOK_PAGES))
     conversation = client.post("/api/conversations").get_json()
 

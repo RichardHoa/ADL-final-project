@@ -8,9 +8,9 @@ from rag.web.logging import logging_api
 from rag.web.rag import rag_api
 
 
-def create_app(storage_dir=None, ollama=None, top_k=None):
+def create_app(storage_dir=None, ollama=None, top_k=None, min_score=None):
     app = Flask(__name__)
-    app.extensions["rag"] = build_services(storage_dir, ollama, top_k)
+    app.extensions["rag"] = build_services(storage_dir, ollama, top_k, min_score)
     app.register_blueprint(documents_api)
     app.register_blueprint(conversations_api)
     app.register_blueprint(rag_api)

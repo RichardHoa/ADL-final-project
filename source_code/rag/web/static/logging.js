@@ -49,6 +49,15 @@ function block(title, text) {
   return section;
 }
 
+function scoreParts(chunk) {
+  // Generations logged before hybrid search only have the dense similarity.
+  if (chunk.score === undefined) return [element("span", "score", chunk.similarity.toFixed(3))];
+  return [
+    element("span", "score", chunk.score.toFixed(3)),
+    element("span", "", `dense ${chunk.similarity.toFixed(3)} · keyword ${chunk.keyword.toFixed(3)}`),
+  ];
+}
+
 function chunksBlock(chunks) {
   const section = element("section", "generation__block");
   section.append(element("h3", "generation__label", `Retrieved chunks (${chunks.length})`));
@@ -57,7 +66,7 @@ function chunksBlock(chunks) {
     const item = element("li", "result");
     const header = element("div", "result__header");
     header.append(
-      element("span", "score", chunk.similarity.toFixed(3)),
+      ...scoreParts(chunk),
       element("span", "", `${chunk.document}, page ${chunk.page} · chunk #${chunk.index}`),
     );
     item.append(header, element("p", "chunk-text", chunk.text));
