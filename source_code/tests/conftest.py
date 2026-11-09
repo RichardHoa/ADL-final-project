@@ -1,5 +1,6 @@
 import hashlib
 import re
+import time
 
 import pytest
 from fpdf import FPDF
@@ -32,6 +33,25 @@ def make_pdf(path, pages):
         pdf.multi_cell(0, 6, text)
     pdf.output(str(path))
     return path
+
+
+def start_upload(client, path):
+    with open(path, "rb") as handle:
+        return client.post("/api/documents", data={"file": (handle, path.name)}, content_type="multipart/form-data")
+
+
+def wait_for_job(client, job_id, timeout=10):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        job = client.get(f"/api/ingestions/{job_id}").get_json()
+        if job["status"] != "running":
+            return job
+        time.sleep(0.05)
+    raise AssertionError(f"Ingestion job {job_id} did not finish")
+
+
+def upload(client, path):
+    return wait_for_job(client, start_upload(client, path).get_json()["id"])
 
 
 @pytest.fixture

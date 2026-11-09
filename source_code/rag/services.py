@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from rag.config import load_config
+from rag.conversations.browser import DatabaseBrowser
 from rag.conversations.store import ConversationStore
+from rag.ingestion.jobs import IngestionJobs
 from rag.ollama_client import OllamaClient
 from rag.retrieval.knowledge_base import KnowledgeBase
 
@@ -11,7 +13,10 @@ from rag.retrieval.knowledge_base import KnowledgeBase
 class Services:
     ollama: object
     knowledge_base: KnowledgeBase
+    ingestions: IngestionJobs
     conversations: ConversationStore
+    database: DatabaseBrowser
+    llm_model: str
     uploads_dir: Path
     top_k: int
 
@@ -22,10 +27,14 @@ def build_services(storage_dir=None, ollama=None, top_k=None):
     uploads_dir = storage_dir / "uploads"
     uploads_dir.mkdir(parents=True, exist_ok=True)
     ollama = ollama or OllamaClient(config.ollama_host, config.embed_model, config.llm_model)
+    knowledge_base = KnowledgeBase(storage_dir / "chroma", ollama)
     return Services(
         ollama=ollama,
-        knowledge_base=KnowledgeBase(storage_dir / "chroma", ollama),
+        knowledge_base=knowledge_base,
+        ingestions=IngestionJobs(knowledge_base),
         conversations=ConversationStore(storage_dir / "chat.db"),
+        database=DatabaseBrowser(storage_dir / "chat.db"),
+        llm_model=config.llm_model,
         uploads_dir=uploads_dir,
         top_k=top_k or config.top_k,
     )

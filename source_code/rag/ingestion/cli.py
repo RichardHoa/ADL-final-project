@@ -22,7 +22,15 @@ def main(argv=None, storage_dir=None, ollama=None):
         print(f"No PDF or TXT Documents found in {args.path}")
         return 1
     for document in documents:
-        result = knowledge_base.ingest(document)
+        result = knowledge_base.ingest(document, _printer(document.name))
         print(f"{result['name']}: {result['chunks']} chunks")
     print(f"Ingested {len(documents)} document(s).")
     return 0
+
+
+def _printer(name):
+    def progress(stage, done=0, total=0):
+        counter = f" {done}/{total}" if stage == "embedding" else ""
+        print(f"{name}: {stage}{counter}", flush=True)
+
+    return progress

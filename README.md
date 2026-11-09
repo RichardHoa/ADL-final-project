@@ -45,9 +45,16 @@ The `Dataset/` folder is mounted read-only at `/data` inside the container. Inge
 docker compose exec app python -m rag.ingestion /data
 ```
 
-The CLI prints each Document and how many Chunks it produced:
+The CLI prints each Ingestion stage as it goes (Chunks are embedded in batches of 16), then how many Chunks each Document produced:
 
 ```
+CS Major Handbook_2026-2027.pdf: reading pages
+CS Major Handbook_2026-2027.pdf: chunking
+CS Major Handbook_2026-2027.pdf: embedding 0/88
+CS Major Handbook_2026-2027.pdf: embedding 16/88
+...
+CS Major Handbook_2026-2027.pdf: embedding 88/88
+CS Major Handbook_2026-2027.pdf: storing
 CS Major Handbook_2026-2027.pdf: 88 chunks
 Ingested 1 document(s).
 ```
@@ -59,9 +66,14 @@ You can also pass a single file, e.g. `python -m rag.ingestion "/data/CS Major H
 Open http://localhost:5000.
 
 - **Ask** a question in the box at the bottom, e.g. *"How many credits are required to graduate?"*. Press Enter to send, or Shift+Enter for a new line. A *Thinking…* indicator shows while the model works; on a CPU an answer can take tens of seconds.
-- **Citations** appear under each answer as *Document, page N*. Click one to expand the snippet the model was given.
+- **Citations** appear under each answer as *Document, page N*. Click one to expand the snippet the model was given. **View prompt** opens that answer's Generation on the Logging page.
 - **Conversations** are listed in the sidebar, most recently active first, and titled from their first question. Click one to reopen it, use **New chat** to start fresh, or **Delete** to remove one. History lives in SQLite, so it survives page reloads and container restarts.
-- **Documents** shows everything in the knowledge base with its Chunk count. **Upload PDF or TXT** ingests a new file, and the list refreshes when it's done. Other file types are rejected with an error.
+- **Documents** shows everything in the knowledge base with its Chunk count. **Upload PDF or TXT** ingests a new file in the background. A progress bar shows each stage (reading pages, chunking, embedding *n/total* Chunks, storing), and the list refreshes when it's done. You can start several uploads at once, and reloading the page picks up any that are still running. Other file types are rejected with an error.
+
+The nav bar links to two inspection pages:
+
+- **RAG** (http://localhost:5000/rag) lists every Chunk in the knowledge base, 50 per page, filterable by Document and text. **Similarity search** runs a query exactly as chat retrieval does and returns every Chunk whose Similarity score (1 − cosine distance, from 0 to 1) is at or above the threshold you set, best first, up to *Max results*. The threshold only affects this page, not chat.
+- **Logging** (http://localhost:5000/logging) has two tabs. **Generations** lists every Generation newest first: the retrieved Chunks with their scores, the exact system and user prompts sent to the model, the raw answer, the model, how long it took, and whether it failed. Failed Generations are logged with their error even though nothing is saved to the Conversation. Filter by Conversation, and click **Refresh** to load new entries. **chat.db** is a read-only browser for every table in the SQLite database.
 
 ## Everyday commands
 
@@ -99,53 +111,14 @@ Runtime data goes in `storage/` at the repo root, which is bind-mounted into the
 ```
 storage/
 ├── chroma/    # knowledge base (ChromaDB)
-├── chat.db    # Conversations and Messages (SQLite)
+├── chat.db    # Conversations, Messages and the Generation log (SQLite)
 └── uploads/   # Documents uploaded from the UI
 ```
 
-## HTTP API
+## Improvement checklist
 
-The UI uses this JSON API, and you can call it directly too:
+- [x] Show progress during Ingestion (upload UI and CLI)
+- [x] A separate page (`/rag`) that shows all the Chunks and runs a similarity search with a custom threshold
+- [x] A page (`/logging`) showing every prompt sent to the model and its answer, plus a read-only view of `chat.db`
 
-| Method & path | Does |
-| --- | --- |
-| `GET /api/documents` | List Documents with Chunk counts |
-| `POST /api/documents` | Upload a file (multipart field `file`); 400 for unsupported types |
-| `GET /api/conversations` | List Conversations, most recently active first |
-| `POST /api/conversations` | Create an empty Conversation |
-| `GET /api/conversations/<id>` | A Conversation with its Messages and Citations |
-| `DELETE /api/conversations/<id>` | Delete a Conversation and its Messages |
-| `POST /api/conversations/<id>/messages` | Ask `{"question": "..."}`; returns the assistant Message; 502 if Ollama is unreachable |
 
-## Repository layout
-
-```
-.
-├── Dataset/                  # the CS Major Handbook PDF (mounted at /data)
-├── docker/
-│   ├── Dockerfile            # python:3.11-slim + gunicorn
-│   ├── Dockerfile.dockerignore
-│   └── docker-compose.yml    # ollama, ollama-init, app
-├── source_code/
-│   ├── rag/
-│   │   ├── ingestion/        # PDF/TXT loading, chunking, ingest CLI
-│   │   ├── retrieval/        # ChromaDB knowledge base, prompt + answer
-│   │   ├── conversations/    # SQLite Conversation store
-│   │   ├── web/              # Flask app factory, JSON API, static UI
-│   │   ├── config.py         # environment variables
-│   │   └── ollama_client.py
-│   ├── tests/                # pytest: HTTP API and ingest CLI
-│   └── requirements.txt
-├── report/                   # final report (PDF)
-├── demo_video/               # demo videos (not committed)
-└── GLOSSARY.md
-```
-
-## Known limitations
-
-- **Answer quality.** `qwen2.5:0.5b` is small, so answers can be wrong, incomplete or invented even when the right Chunk was retrieved. Check the Citations. Bigger models (`LLM_MODEL=qwen2.5:1.5b` or `qwen2.5:3b`) help if your machine can run them.
-- **No follow-up questions.** Each question is answered on its own; earlier turns in the Conversation are not sent to the model.
-- **CPU only and no streaming.** Answers appear all at once after generation finishes, which can be slow on older CPUs. Requests time out after 300 seconds.
-- **Selectable text only.** Text inside images or scanned pages is not extracted (no OCR).
-- **Small management surface.** Documents can't be deleted from the UI, and Conversations can't be renamed or searched.
-- **Single-user and local.** There is no authentication. Don't expose port 5000 to the internet.

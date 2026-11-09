@@ -1,4 +1,4 @@
-from conftest import make_pdf
+from conftest import make_pdf, start_upload, upload, wait_for_job
 
 
 HANDBOOK_PAGES = [
@@ -7,17 +7,12 @@ HANDBOOK_PAGES = [
 ]
 
 
-def upload(client, path):
-    with open(path, "rb") as handle:
-        return client.post("/api/documents", data={"file": (handle, path.name)}, content_type="multipart/form-data")
-
-
 def test_uploaded_pdf_is_listed_with_chunks(client, tmp_path):
     pdf = make_pdf(tmp_path / "handbook.pdf", HANDBOOK_PAGES)
 
-    response = upload(client, pdf)
+    job = upload(client, pdf)
 
-    assert response.status_code == 201
+    assert job["status"] == "done"
     documents = client.get("/api/documents").get_json()
     assert [d["name"] for d in documents] == ["handbook.pdf"]
     assert documents[0]["chunks"] > 0
@@ -70,3 +65,34 @@ def test_chat_page_and_its_assets_are_served(client):
     assert b"/static/app.js" in page.data and b"/static/app.css" in page.data
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/app.css").status_code == 200
+
+
+def test_upload_reports_ingestion_progress_until_done(client, tmp_path):
+    pdf = make_pdf(tmp_path / "handbook.pdf", HANDBOOK_PAGES * 20)
+
+    response = start_upload(client, pdf)
+
+    assert response.status_code == 202
+    started = response.get_json()
+    assert started["name"] == "handbook.pdf" and started["status"] == "running"
+    assert started["id"] in [job["id"] for job in client.get("/api/ingestions").get_json()]
+
+    job = wait_for_job(client, started["id"])
+    assert job["status"] == "done" and job["stage"] == "done"
+    assert job["chunks"] > 16
+    assert job["progress"] == {"done": job["chunks"], "total": job["chunks"]}
+
+
+def test_unreadable_upload_fails_its_job_with_an_error(client, tmp_path):
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"not really a pdf")
+
+    job = upload(client, broken)
+
+    assert job["status"] == "failed"
+    assert job["error"]
+    assert client.get("/api/documents").get_json() == []
+
+
+def test_unknown_ingestion_job_is_not_found(client):
+    assert client.get("/api/ingestions/nope").status_code == 404

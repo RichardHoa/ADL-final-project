@@ -13,3 +13,11 @@
 **Conversation**: An ordered series of Messages between a user and the chatbot, kept permanently.
 
 **Message**: One turn in a Conversation: either a user's question or the chatbot's answer (with its Citations).
+
+**Similarity score**: How closely a Chunk matches a question, from 0 (unrelated) to 1 (identical in meaning). Retrieval ranks Chunks by it.
+
+**Similarity threshold**: A minimum Similarity score; only Chunks at or above it count as matches. Used when inspecting the knowledge base, not when answering in chat.
+
+**Generation**: One request to the language model to answer a question: the retrieved Chunks, the exact prompt sent, and the model's raw answer.
+
+**Generation log**: The record of every Generation, kept as long as its Conversation, so a user can see exactly what the model was given and what it returned.

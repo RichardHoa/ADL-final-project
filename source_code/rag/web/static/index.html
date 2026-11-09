@@ -11,6 +11,11 @@
 <body>
   <div class="app">
     <aside class="sidebar" aria-label="Conversations and documents">
+      <nav class="site-nav" aria-label="Pages">
+        <a href="/" aria-current="page">Chat</a>
+        <a href="/rag">RAG</a>
+        <a href="/logging">Logging</a>
+      </nav>
       <header class="sidebar__header">
         <h1 class="brand">Handbook Chatbot</h1>
         <button type="button" class="button button--primary" id="new-chat">New chat</button>
@@ -30,7 +35,7 @@
           Upload PDF or TXT
           <input type="file" class="upload__input" id="upload" accept=".pdf,.txt,application/pdf,text/plain">
         </label>
-        <p class="hint" id="upload-status" role="status"></p>
+        <ul class="ingestions" id="ingestions" aria-label="Ingestion progress"></ul>
         <p class="error" id="upload-error" role="alert"></p>
       </section>
     </aside>

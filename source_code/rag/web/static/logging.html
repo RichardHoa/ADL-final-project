@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Generation Log</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/logging.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="page__header">
+      <h1 class="brand">Logging</h1>
+      <nav class="site-nav" aria-label="Pages">
+        <a href="/">Chat</a>
+        <a href="/rag">RAG</a>
+        <a href="/logging" aria-current="page">Logging</a>
+      </nav>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Logging views">
+      <button type="button" class="tab" role="tab" id="tab-generations" aria-controls="panel-generations" aria-selected="true">Generations</button>
+      <button type="button" class="tab" role="tab" id="tab-database" aria-controls="panel-database" aria-selected="false" tabindex="-1">chat.db</button>
+    </div>
+
+    <section class="card" role="tabpanel" id="panel-generations" aria-labelledby="tab-generations">
+      <form class="toolbar" id="generations-form">
+        <label class="field field--grow">
+          <span class="field__label">Conversation</span>
+          <select class="input" id="generations-conversation"><option value="">All conversations</option></select>
+        </label>
+        <button type="submit" class="button">Refresh</button>
+      </form>
+      <p class="error" id="generations-error" role="alert"></p>
+      <ol class="generations" id="generations"></ol>
+      <p class="hint" id="generations-empty" hidden>No Generations yet. Ask a question in Chat.</p>
+      <div class="pager">
+        <button type="button" class="button" id="generations-prev">Newer</button>
+        <span class="hint" id="generations-summary" role="status"></span>
+        <button type="button" class="button" id="generations-next">Older</button>
+      </div>
+    </section>
+
+    <section class="card" role="tabpanel" id="panel-database" aria-labelledby="tab-database" hidden>
+      <form class="toolbar" id="database-form">
+        <label class="field">
+          <span class="field__label">Table</span>
+          <select class="input" id="database-table"></select>
+        </label>
+        <button type="submit" class="button">Refresh</button>
+      </form>
+      <p class="error" id="database-error" role="alert"></p>
+      <div class="table-wrap">
+        <table class="table table--data">
+          <thead><tr id="database-head"></tr></thead>
+          <tbody id="database-body"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button type="button" class="button" id="database-prev">Previous</button>
+        <span class="hint" id="database-summary" role="status"></span>
+        <button type="button" class="button" id="database-next">Next</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

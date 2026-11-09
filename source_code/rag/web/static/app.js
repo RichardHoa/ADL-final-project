@@ -5,7 +5,7 @@ const elements = {
   documents: document.getElementById("documents"),
   documentsEmpty: document.getElementById("documents-empty"),
   upload: document.getElementById("upload"),
-  uploadStatus: document.getElementById("upload-status"),
+  ingestions: document.getElementById("ingestions"),
   uploadError: document.getElementById("upload-error"),
   chatTitle: document.getElementById("chat-title"),
   messages: document.getElementById("messages"),
@@ -87,6 +87,11 @@ function messageItem(message) {
     element("p", "message__content", message.content),
   );
   if (message.citations?.length) item.append(citationList(message.citations));
+  if (message.generation_id) {
+    const link = element("a", "message__log", "View prompt");
+    link.href = `/logging?generation=${message.generation_id}`;
+    item.append(link);
+  }
   return item;
 }
 
@@ -199,25 +204,85 @@ async function ask(event) {
   await refreshConversations();
 }
 
+const POLL_INTERVAL_MS = 500;
+const MAX_POLL_FAILURES = 5;
+const STAGE_LABELS = {
+  queued: "Queued",
+  "reading pages": "Reading pages",
+  chunking: "Chunking",
+  embedding: "Embedding",
+  storing: "Storing",
+};
+
+function ingestionRow(job) {
+  let row = elements.ingestions.querySelector(`[data-job="${job.id}"]`);
+  if (!row) {
+    row = element("li", "ingestion");
+    row.dataset.job = job.id;
+    row.append(element("span", "ingestion__name", job.name), element("progress", "ingestion__bar"), element("span", "hint"));
+    elements.ingestions.prepend(row);
+  }
+  return row;
+}
+
+function renderIngestion(job) {
+  const row = ingestionRow(job);
+  const bar = row.querySelector("progress");
+  const status = row.querySelector(".hint");
+  const { done, total } = job.progress;
+  row.classList.toggle("ingestion--failed", job.status === "failed");
+  if (job.status === "done") {
+    bar.max = 1;
+    bar.value = 1;
+    status.textContent = `Ingested (${chunkCount(job.chunks)})`;
+  } else if (job.status === "failed") {
+    bar.hidden = true;
+    status.textContent = `Failed: ${job.error}`;
+  } else if (total > 0) {
+    bar.max = total;
+    bar.value = done;
+    status.textContent = `${STAGE_LABELS[job.stage] ?? job.stage} ${done}/${total} chunks`;
+  } else {
+    bar.removeAttribute("value");
+    status.textContent = `${STAGE_LABELS[job.stage] ?? job.stage}…`;
+  }
+}
+
+async function followIngestion(job) {
+  renderIngestion(job);
+  let failures = 0;
+  while (job.status === "running") {
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    try {
+      job = await request(`/api/ingestions/${job.id}`);
+      failures = 0;
+    } catch (failure) {
+      failures += 1;
+      if (failures >= MAX_POLL_FAILURES) job = { ...job, status: "failed", error: failure.message };
+    }
+    renderIngestion(job);
+  }
+  if (job.status === "done") await loadDocuments().catch(() => {});
+}
+
 async function upload() {
   const file = elements.upload.files[0];
   if (!file) return;
   elements.uploadError.textContent = "";
-  elements.uploadStatus.textContent = `Ingesting ${file.name}…`;
-  elements.upload.disabled = true;
   try {
     const body = new FormData();
     body.append("file", file);
-    const doc = await request("/api/documents", { method: "POST", body });
-    elements.uploadStatus.textContent = `Ingested ${doc.name} (${chunkCount(doc.chunks)}).`;
-    await loadDocuments();
+    followIngestion(await request("/api/documents", { method: "POST", body }));
   } catch (failure) {
-    elements.uploadStatus.textContent = "";
     elements.uploadError.textContent = failure.message;
   } finally {
-    elements.upload.disabled = false;
     elements.upload.value = "";
   }
+}
+
+async function resumeIngestions() {
+  const jobs = await request("/api/ingestions");
+  for (const job of jobs.filter((job) => job.status === "running").reverse()) followIngestion(job);
 }
 
 elements.newChat.addEventListener("click", newChat);
@@ -238,6 +303,11 @@ async function start() {
     await loadDocuments();
   } catch (failure) {
     elements.uploadError.textContent = `Could not load documents: ${failure.message}`;
+  }
+  try {
+    await resumeIngestions();
+  } catch (failure) {
+    elements.uploadError.textContent = `Could not load Ingestion progress: ${failure.message}`;
   }
 }
 

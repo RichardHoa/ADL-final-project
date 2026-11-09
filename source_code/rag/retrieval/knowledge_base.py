@@ -11,6 +11,7 @@ from rag.ingestion.loader import load_pages
 DOCUMENT_PREFIX = "search_document: "
 QUERY_PREFIX = "search_query: "
 COLLECTION_NAME = "chunks"
+EMBED_BATCH_SIZE = 16
 
 _lock = threading.Lock()
 
@@ -28,10 +29,20 @@ class KnowledgeBase:
             COLLECTION_NAME, embedding_function=None, metadata={"hnsw:space": "cosine"}
         )
 
-    def ingest(self, path):
+    def ingest(self, path, progress=None):
+        progress = progress or (lambda stage, done=0, total=0: None)
         name = path.name
-        chunks = chunk_pages(name, load_pages(path))
-        embeddings = self._ollama.embed([DOCUMENT_PREFIX + chunk.text for chunk in chunks]) if chunks else []
+        progress("reading pages")
+        pages = load_pages(path)
+        progress("chunking")
+        chunks = chunk_pages(name, pages)
+        embeddings = []
+        progress("embedding", 0, len(chunks))
+        for start in range(0, len(chunks), EMBED_BATCH_SIZE):
+            batch = chunks[start : start + EMBED_BATCH_SIZE]
+            embeddings += self._ollama.embed([DOCUMENT_PREFIX + chunk.text for chunk in batch])
+            progress("embedding", len(embeddings), len(chunks))
+        progress("storing", len(chunks), len(chunks))
         with _lock:
             collection = self._collection()
             collection.delete(where={"source": name})
@@ -48,13 +59,29 @@ class KnowledgeBase:
         embedding = self._ollama.embed([QUERY_PREFIX + question])[0]
         with _lock:
             collection = self._collection()
-            if collection.count() == 0:
+            count = collection.count()
+            if count == 0:
                 return []
-            result = collection.query(query_embeddings=[embedding], n_results=top_k)
+            result = collection.query(
+                query_embeddings=[embedding],
+                n_results=min(top_k, count),
+                include=["documents", "metadatas", "distances"],
+            )
         return [
-            {"source": metadata["source"], "page": metadata["page"], "text": text}
-            for text, metadata in zip(result["documents"][0], result["metadatas"][0])
+            {**self._record(chunk_id, text, metadata), "similarity": max(0.0, 1 - distance)}
+            for chunk_id, text, metadata, distance in zip(
+                result["ids"][0], result["documents"][0], result["metadatas"][0], result["distances"][0]
+            )
         ]
+
+    def chunks(self):
+        with _lock:
+            result = self._collection().get(include=["documents", "metadatas"])
+        records = [
+            self._record(chunk_id, text, metadata)
+            for chunk_id, text, metadata in zip(result["ids"], result["documents"], result["metadatas"])
+        ]
+        return sorted(records, key=lambda record: (record["document"], record["index"]))
 
     def documents(self):
         with _lock:
@@ -65,3 +92,8 @@ class KnowledgeBase:
     @staticmethod
     def _chunk_id(name, index):
         return f"{hashlib.sha1(name.encode()).hexdigest()}-{index}"
+
+    @staticmethod
+    def _record(chunk_id, text, metadata):
+        index = int(chunk_id.rsplit("-", 1)[1])
+        return {"document": metadata["source"], "page": metadata["page"], "index": index, "text": text}

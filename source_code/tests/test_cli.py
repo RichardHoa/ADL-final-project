@@ -19,7 +19,10 @@ def test_ingesting_a_folder_lists_its_documents(tmp_path, fake_ollama, capsys):
 
     main([str(folder)], storage_dir=storage, ollama=fake_ollama)
 
-    assert "handbook.pdf" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "handbook.pdf: reading pages" in output
+    assert "handbook.pdf: embedding" in output
+    assert "handbook.pdf: 2 chunks" in output
     client = create_app(storage_dir=storage, ollama=fake_ollama).test_client()
     documents = client.get("/api/documents").get_json()
     assert [d["name"] for d in documents] == ["handbook.pdf"]

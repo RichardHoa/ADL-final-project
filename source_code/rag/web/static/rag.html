@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Knowledge Base Inspector</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/rag.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="page__header">
+      <h1 class="brand">Knowledge Base</h1>
+      <nav class="site-nav" aria-label="Pages">
+        <a href="/">Chat</a>
+        <a href="/rag" aria-current="page">RAG</a>
+        <a href="/logging">Logging</a>
+      </nav>
+    </header>
+
+    <section class="card" aria-labelledby="search-heading">
+      <h2 class="panel__title" id="search-heading">Similarity search</h2>
+      <form class="toolbar" id="search-form">
+        <label class="field field--grow">
+          <span class="field__label">Query</span>
+          <input class="input" type="search" id="search-query" placeholder="e.g. How many credits are required?" required>
+        </label>
+        <label class="field">
+          <span class="field__label">Similarity threshold: <output id="threshold-value">0.50</output></span>
+          <input type="range" id="search-threshold" min="0" max="1" step="0.01" value="0.5">
+        </label>
+        <label class="field">
+          <span class="field__label">Max results</span>
+          <input class="input input--narrow" type="number" id="search-max" min="1" max="100" value="20">
+        </label>
+        <button type="submit" class="button button--primary" id="search-submit">Search</button>
+      </form>
+      <p class="hint" id="search-status" role="status"></p>
+      <p class="error" id="search-error" role="alert"></p>
+      <ol class="results" id="search-results"></ol>
+    </section>
+
+    <section class="card" aria-labelledby="chunks-heading">
+      <h2 class="panel__title" id="chunks-heading">All chunks</h2>
+      <form class="toolbar" id="chunks-form">
+        <label class="field">
+          <span class="field__label">Document</span>
+          <select class="input" id="chunks-document"><option value="">All documents</option></select>
+        </label>
+        <label class="field field--grow">
+          <span class="field__label">Contains text</span>
+          <input class="input" type="search" id="chunks-text" placeholder="Filter chunk text">
+        </label>
+      </form>
+      <p class="error" id="chunks-error" role="alert"></p>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Document</th><th scope="col">Page</th><th scope="col">#</th><th scope="col">Text</th></tr></thead>
+          <tbody id="chunks-body"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button type="button" class="button" id="chunks-prev">Previous</button>
+        <span class="hint" id="chunks-summary" role="status"></span>
+        <button type="button" class="button" id="chunks-next">Next</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

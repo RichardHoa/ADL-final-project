@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 
-from rag.retrieval.answerer import answer
+from rag.ollama_client import OllamaError
+from rag.retrieval.answerer import answer, citations
 from rag.web.context import services
 
 conversations_api = Blueprint("conversations", __name__, url_prefix="/api/conversations")
@@ -41,6 +42,11 @@ def post_message(conversation_id):
     question = ((request.get_json(silent=True) or {}).get("question") or "").strip()
     if not question:
         return jsonify(error="Question must not be empty."), 400
-    text, citations = answer(question, services().knowledge_base, services().ollama, services().top_k)
+    generation = answer(question, services().knowledge_base, services().ollama, services().top_k)
+    if generation["error"]:
+        store.log_generation(conversation_id, generation, services().llm_model)
+        raise OllamaError(generation["error"])
     store.add_message(conversation_id, "user", question)
-    return jsonify(store.add_message(conversation_id, "assistant", text, citations)), 201
+    reply = store.add_message(conversation_id, "assistant", generation["answer"], citations(generation))
+    reply["generation_id"] = store.log_generation(conversation_id, generation, services().llm_model, reply["id"])
+    return jsonify(reply), 201
