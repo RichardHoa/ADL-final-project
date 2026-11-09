@@ -11,19 +11,20 @@
 <body>
   <div class="app">
     <aside class="sidebar" aria-label="Conversations and documents">
-      <nav class="site-nav" aria-label="Pages">
-        <a href="/" aria-current="page">Chat</a>
-        <a href="/rag">RAG</a>
-        <a href="/logging">Logging</a>
-      </nav>
       <header class="sidebar__header">
         <h1 class="brand">Handbook Chatbot</h1>
-        <button type="button" class="button button--primary" id="new-chat">New chat</button>
+        <nav class="site-nav" aria-label="Pages">
+          <a class="site-nav__link" href="/" aria-current="page">Chat</a>
+          <a class="site-nav__link" href="/rag">RAG</a>
+          <a class="site-nav__link" href="/logging">Logging</a>
+        </nav>
       </header>
 
-      <section class="panel" aria-labelledby="conversations-heading">
+      <button type="button" class="button button--primary button--block" id="new-chat">New chat</button>
+
+      <section class="panel panel--grow" aria-labelledby="conversations-heading">
         <h2 class="panel__title" id="conversations-heading">Conversations</h2>
-        <ul class="list" id="conversations"></ul>
+        <ul class="list list--grow" id="conversations"></ul>
         <p class="hint" id="conversations-empty" hidden>No conversations yet.</p>
       </section>
 
@@ -47,8 +48,10 @@
       <p class="thinking" id="thinking" role="status" hidden>Thinking…</p>
       <form class="composer" id="composer">
         <label class="visually-hidden" for="question">Question</label>
-        <textarea class="composer__input" id="question" rows="2" placeholder="Ask about the handbook…" required></textarea>
-        <button type="submit" class="button button--primary" id="ask">Ask</button>
+        <div class="composer__box">
+          <textarea class="composer__input" id="question" rows="2" placeholder="Ask about the handbook…" required></textarea>
+          <button type="submit" class="button button--primary" id="ask">Ask</button>
+        </div>
       </form>
     </main>
   </div>
