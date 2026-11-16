@@ -31,8 +31,8 @@ def test_question_is_answered_with_citations_and_conversation_reloads(client, tm
     answer = response.get_json()
     assert answer["role"] == "assistant"
     assert "128 credits" in answer["content"]
-    assert {"document": "handbook.pdf", "page": 2} in [
-        {"document": c["document"], "page": c["page"]} for c in answer["citations"]
+    assert {"document": "handbook.pdf", "pages": [2]} in [
+        {"document": c["document"], "pages": c["pages"]} for c in answer["citations"]
     ]
     assert all(c["snippet"] for c in answer["citations"])
 

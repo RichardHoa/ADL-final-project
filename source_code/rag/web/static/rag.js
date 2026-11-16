@@ -37,6 +37,11 @@ function element(tag, className, text) {
   return node;
 }
 
+// Chunks list every page they span.
+function pageLabel({ pages }) {
+  return pages.length === 1 ? `page ${pages[0]}` : `pages ${pages.join(", ")}`;
+}
+
 function chunkText(text) {
   if (text.length <= PREVIEW_LENGTH) return element("p", "chunk-text", text);
   const details = element("details", "chunk-text");
@@ -56,7 +61,7 @@ function resultItem(result) {
   const header = element("div", "result__header");
   header.append(
     ...scoreParts(result),
-    element("span", "", `${result.document}, page ${result.page} · chunk #${result.index}`),
+    element("span", "", `${result.document}, ${pageLabel(result)} · chunk #${result.index}`),
   );
   item.append(header, chunkText(result.text));
   return item;
@@ -90,7 +95,7 @@ function chunkRow(chunk) {
   const row = element("tr");
   const text = element("td");
   text.append(chunkText(chunk.text));
-  row.append(element("td", "", chunk.document), element("td", "", String(chunk.page)), element("td", "", String(chunk.index)), text);
+  row.append(element("td", "", chunk.document), element("td", "", chunk.pages.join(", ")), element("td", "", String(chunk.index)), text);
   return row;
 }
 

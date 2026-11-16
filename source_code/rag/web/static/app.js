@@ -32,6 +32,12 @@ function element(tag, className, text) {
   return node;
 }
 
+// Chunks list every page they span; Generations saved before that carry a single page.
+function pageLabel({ pages, page }) {
+  pages ??= [page];
+  return pages.length === 1 ? `page ${pages[0]}` : `pages ${pages.join(", ")}`;
+}
+
 function chunkCount(count) {
   return `${count} ${count === 1 ? "chunk" : "chunks"}`;
 }
@@ -101,7 +107,7 @@ function citationList(citations) {
   for (const citation of citations) {
     const details = element("details", "citation");
     details.append(
-      element("summary", "citation__summary", `${citation.document}, page ${citation.page}`),
+      element("summary", "citation__summary", `${citation.document}, ${pageLabel(citation)}`),
       element("blockquote", "citation__snippet", citation.snippet),
     );
     const item = element("li");

@@ -13,7 +13,7 @@ def normalize(text):
 
 
 def answers(chunk, item):
-    """Whether the Chunk is on an expected page and contains one of the question's evidence phrases.
+    """Whether the Chunk spans an expected page and contains one of the question's evidence phrases.
 
     Unanswerable questions have no pages, so no Chunk answers them.
 
@@ -21,7 +21,7 @@ def answers(chunk, item):
     than Chunk index, so it stays valid when chunking changes. Matching ignores case and whitespace.
     """
     text = normalize(chunk["text"])
-    return chunk["page"] in item["pages"] and any(normalize(phrase) in text for phrase in item["evidence"])
+    return bool(set(chunk["pages"]) & set(item["pages"])) and any(normalize(phrase) in text for phrase in item["evidence"])
 
 
 def rank_of_answer(candidates, item, key):

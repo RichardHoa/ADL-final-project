@@ -56,7 +56,7 @@ class KnowledgeBase:
                     ids=[self._chunk_id(name, index) for index in range(len(chunks))],
                     embeddings=embeddings,
                     documents=[chunk.text for chunk in chunks],
-                    metadatas=[{"source": chunk.source, "page": chunk.page} for chunk in chunks],
+                    metadatas=[{"source": chunk.source, "pages": ",".join(map(str, chunk.pages))} for chunk in chunks],
                 )
         return {"name": name, "chunks": len(chunks)}
 
@@ -122,7 +122,8 @@ class KnowledgeBase:
     @staticmethod
     def _record(chunk_id, text, metadata):
         index = int(chunk_id.rsplit("-", 1)[1])
-        return {"document": metadata["source"], "page": metadata["page"], "index": index, "text": text}
+        pages = [int(page) for page in metadata["pages"].split(",")]
+        return {"document": metadata["source"], "pages": pages, "index": index, "text": text}
 
 
 def _cosine(a, b):

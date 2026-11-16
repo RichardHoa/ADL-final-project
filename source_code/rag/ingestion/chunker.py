@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 # Most sections fit in one Chunk; longer ones are split, preferring paragraph breaks, then sentence ends,
 # then line breaks, then any whitespace.
-MAX_CHUNK_SIZE = 1500
+MAX_CHUNK_SIZE = 750
 BOUNDARIES = [re.compile(pattern) for pattern in (r"\n\s*\n", r"(?<=[.!?])\s+", r"\n", r"\s+")]
 
 # Headings: numbered sections ("5.", "5.2", "5.2.2"), course descriptions ("CS302: ...", "CS 401/402: ..."),
@@ -25,7 +25,7 @@ MINOR_WORDS = frozenset("a an and as at by for in of on or the to with".split())
 @dataclass(frozen=True)
 class Chunk:
     source: str
-    page: int
+    pages: tuple[int, ...]
     text: str
 
 
@@ -131,7 +131,8 @@ def _sections(pages):
 
 def chunk_pages(source, pages, size=MAX_CHUNK_SIZE):
     """One Chunk per section, prefixed with the headings it sits under so retrieval sees its context. A section longer
-    than size is split into pieces; the first cites the page the section starts on, the rest the page they start on."""
+    than size is split into pieces. Each Chunk lists every page its text spans: the first piece from the page the
+    section starts on, the rest from the page they start on, through the page they end on."""
     chunks = []
     for start, headings, body in _sections(pages):
         text = "\n".join(line for _, line in body)
@@ -140,6 +141,8 @@ def chunk_pages(source, pages, size=MAX_CHUNK_SIZE):
             line_starts.append(line_starts[-1] + len(line) + 1)
         prefix = " > ".join(title for _, title in headings)
         for number, (offset, piece) in enumerate(_pieces(text, size)):
-            page = start if number == 0 else body[bisect_right(line_starts, offset) - 1][0]
-            chunks.append(Chunk(source=source, page=page, text=f"{prefix}\n{piece}" if prefix else piece))
+            first = start if number == 0 else body[bisect_right(line_starts, offset) - 1][0]
+            last = body[bisect_right(line_starts, offset + len(piece) - 1) - 1][0]
+            pages_spanned = tuple(range(first, last + 1))
+            chunks.append(Chunk(source=source, pages=pages_spanned, text=f"{prefix}\n{piece}" if prefix else piece))
     return chunks

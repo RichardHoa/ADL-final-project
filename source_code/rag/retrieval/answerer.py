@@ -9,8 +9,12 @@ SYSTEM_PROMPT = (
 )
 
 
+def page_label(pages):
+    return f"page {pages[0]}" if len(pages) == 1 else f"pages {', '.join(map(str, pages))}"
+
+
 def build_prompt(question, chunks):
-    context = "\n\n".join(f"[{chunk['document']}, page {chunk['page']}]\n{chunk['text']}" for chunk in chunks)
+    context = "\n\n".join(f"[{chunk['document']}, {page_label(chunk['pages'])}]\n{chunk['text']}" for chunk in chunks)
     return f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
 
 
@@ -36,4 +40,4 @@ def answer(question, knowledge_base, ollama, top_k, min_score):
 
 
 def citations(generation):
-    return [{"document": chunk["document"], "page": chunk["page"], "snippet": chunk["text"]} for chunk in generation["chunks"]]
+    return [{"document": chunk["document"], "pages": chunk["pages"], "snippet": chunk["text"]} for chunk in generation["chunks"]]

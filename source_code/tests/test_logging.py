@@ -39,7 +39,7 @@ def test_each_answer_records_its_generation(client, tmp_path):
     assert generation["answer"] == answer["content"]
     assert generation["model"] == "qwen2.5:0.5b"
     assert generation["duration_ms"] >= 0
-    assert {(c["document"], c["page"]) for c in generation["chunks"]} == {("handbook.pdf", 1), ("handbook.pdf", 2)}
+    assert {(c["document"], *c["pages"]) for c in generation["chunks"]} == {("handbook.pdf", 1), ("handbook.pdf", 2)}
     assert all(0 <= c["similarity"] <= 1 for c in generation["chunks"])
 
     assert client.get(f"/api/generations/{generation['id']}").get_json() == generation

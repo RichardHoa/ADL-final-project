@@ -6,7 +6,7 @@ def texts(pages):
 
 
 def pages_and_texts(pages):
-    return [(chunk.page, chunk.text) for chunk in chunk_pages("handbook.pdf", pages)]
+    return [(chunk.pages, chunk.text) for chunk in chunk_pages("handbook.pdf", pages)]
 
 
 def test_chunks_are_prefixed_with_the_headings_they_sit_under():
@@ -24,7 +24,7 @@ def test_chunks_are_prefixed_with_the_headings_they_sit_under():
     ]
 
 
-def test_a_section_spanning_two_pages_is_one_chunk_citing_the_page_it_starts_on():
+def test_a_section_spanning_two_pages_is_one_chunk_listing_both_pages():
     pages = [
         (1, "7. Course Catalogue\nCS211: Operating Systems\nThe operating system serves as an interface."),
         (2, "It covers processes, threads and memory.\nPrerequisites: CS201"),
@@ -32,7 +32,7 @@ def test_a_section_spanning_two_pages_is_one_chunk_citing_the_page_it_starts_on(
 
     assert pages_and_texts(pages) == [
         (
-            1,
+            (1, 2),
             "7. Course Catalogue > CS211: Operating Systems\nThe operating system serves as an interface.\n"
             "It covers processes, threads and memory.\nPrerequisites: CS201",
         )
@@ -124,24 +124,24 @@ def test_a_table_of_contents_heading_matches_with_extra_spaces_and_a_trailing_fo
     ]
 
 
-def test_a_long_section_splits_at_paragraphs_and_each_piece_cites_the_page_it_starts_on():
-    first, second, third = ("A" * 699 + ".", "B" * 699 + ".", "C" * 699 + ".")
+def test_a_long_section_splits_at_paragraphs_and_each_piece_lists_the_pages_it_spans():
+    first, second, third = ("A" * 349 + ".", "B" * 349 + ".", "C" * 349 + ".")
     pages = [(1, f"6. Teaching, Learning, and Assessment\n{first}\n\n{second}\n"), (2, f"\n{third}\n")]
 
     assert pages_and_texts(pages) == [
-        (1, f"6. Teaching, Learning, and Assessment\n{first}\n\n{second}"),
-        (2, f"6. Teaching, Learning, and Assessment\n{third}"),
+        ((1,), f"6. Teaching, Learning, and Assessment\n{first}\n\n{second}"),
+        ((2,), f"6. Teaching, Learning, and Assessment\n{third}"),
     ]
 
 
 def test_a_long_paragraph_splits_at_sentence_ends_without_overlap():
-    paragraph = " ".join(f"Sentence {number} describes one more assessment in some detail." for number in range(40))
+    paragraph = " ".join(f"Sentence {number} describes one more assessment in some detail." for number in range(20))
 
     pieces = texts([(1, f"6. Teaching, Learning, and Assessment\n{paragraph}")])
 
     bodies = [piece.removeprefix("6. Teaching, Learning, and Assessment\n") for piece in pieces]
     assert len(bodies) == 2
-    assert all(len(body) <= 1500 and body.endswith("detail.") for body in bodies)
+    assert all(len(body) <= 750 and body.endswith("detail.") for body in bodies)
     assert " ".join(bodies) == paragraph
 
 
@@ -152,6 +152,13 @@ def test_empty_sections_produce_no_chunk_but_text_before_the_first_heading_does(
     ]
 
     assert pages_and_texts(pages) == [
-        (1, "Undergraduate Major Handbook"),
-        (2, "5. Concentrations in the Computer Science Major > 5.2 Available Concentrations\n• CS307 Machine Learning"),
+        ((1,), "Undergraduate Major Handbook"),
+        ((2,), "5. Concentrations in the Computer Science Major > 5.2 Available Concentrations\n• CS307 Machine Learning"),
     ]
+
+
+def test_a_piece_crossing_a_page_break_lists_both_pages():
+    first, second, third = ("A" * 349 + ".", "B" * 349 + ".", "C" * 349 + ".")
+    pages = [(1, f"6. Teaching, Learning, and Assessment\n{first}\n\n{second[:200]}"), (2, f"{second[200:]}\n\n{third}\n")]
+
+    assert [chunk.pages for chunk in chunk_pages("handbook.pdf", pages)] == [(1, 2), (2,)]

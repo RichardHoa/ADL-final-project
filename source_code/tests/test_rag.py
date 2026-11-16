@@ -16,17 +16,17 @@ def test_every_chunk_is_listed_and_can_be_filtered(client, tmp_path):
 
     listed = client.get("/api/chunks").get_json()
     assert listed["total"] == 3
-    assert [(c["document"], c["page"], c["index"]) for c in listed["chunks"]] == [
-        ("handbook.pdf", 1, 0),
-        ("handbook.pdf", 2, 1),
-        ("notes.pdf", 1, 0),
+    assert [(c["document"], c["pages"], c["index"]) for c in listed["chunks"]] == [
+        ("handbook.pdf", [1], 0),
+        ("handbook.pdf", [2], 1),
+        ("notes.pdf", [1], 0),
     ]
 
     by_document = client.get("/api/chunks?document=notes.pdf").get_json()
     assert [c["text"] for c in by_document["chunks"]] == ["Office hours are on Tuesday."]
 
     by_text = client.get("/api/chunks?q=capstone").get_json()
-    assert [c["page"] for c in by_text["chunks"]] == [2]
+    assert [c["pages"] for c in by_text["chunks"]] == [[2]]
 
 
 def ask_and_log(client, question):
@@ -41,7 +41,7 @@ def test_chunks_are_paginated(client, tmp_path):
     second_page = client.get("/api/chunks?page=2&per_page=1").get_json()
 
     assert second_page["total"] == 2 and second_page["page"] == 2 and second_page["per_page"] == 1
-    assert [c["page"] for c in second_page["chunks"]] == [2]
+    assert [c["pages"] for c in second_page["chunks"]] == [[2]]
 
 
 def test_search_returns_chunks_at_or_above_threshold_best_first(client, tmp_path):
@@ -49,7 +49,7 @@ def test_search_returns_chunks_at_or_above_threshold_best_first(client, tmp_path
 
     loose = client.post("/api/search", json={"query": "capstone project credits", "threshold": 0}).get_json()
     assert len(loose) == 2
-    assert loose[0]["page"] == 2
+    assert loose[0]["pages"] == [2]
     assert loose[0]["score"] > loose[1]["score"]
     for result in loose:
         assert all(0 <= result[key] <= 1 for key in ("score", "similarity", "keyword"))
@@ -58,7 +58,7 @@ def test_search_returns_chunks_at_or_above_threshold_best_first(client, tmp_path
     strict = client.post(
         "/api/search", json={"query": "capstone project credits", "threshold": loose[0]["score"] - 0.001}
     ).get_json()
-    assert [result["page"] for result in strict] == [2]
+    assert [result["pages"] for result in strict] == [[2]]
 
     capped = client.post("/api/search", json={"query": "capstone", "threshold": 0, "max_results": 1}).get_json()
     assert len(capped) == 1
@@ -79,7 +79,7 @@ def test_chat_only_sends_chunks_scoring_at_least_the_minimum(tmp_path, fake_olla
     upload(client, make_pdf(tmp_path / "handbook.pdf", ["1. Credits\nStudents need 128 credits to graduate.", "2. Cafeteria\nThe cafeteria opens at noon."]))
 
     [credits] = ask_and_log(client, "How many credits do students need to graduate?")
-    assert [chunk["page"] for chunk in credits["chunks"]] == [1]
+    assert [chunk["pages"] for chunk in credits["chunks"]] == [[1]]
     assert credits["chunks"][0]["score"] >= 0.4
 
     off_topic = ask_and_log(client, "What is the weather on Mars?")[0]

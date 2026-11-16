@@ -39,6 +39,12 @@ function element(tag, className, text) {
   return node;
 }
 
+// Chunks list every page they span; Generations saved before that carry a single page.
+function pageLabel({ pages, page }) {
+  pages ??= [page];
+  return pages.length === 1 ? `page ${pages[0]}` : `pages ${pages.join(", ")}`;
+}
+
 function formatTime(iso) {
   return new Date(iso).toLocaleString();
 }
@@ -67,7 +73,7 @@ function chunksBlock(chunks) {
     const header = element("div", "result__header");
     header.append(
       ...scoreParts(chunk),
-      element("span", "", `${chunk.document}, page ${chunk.page} · chunk #${chunk.index}`),
+      element("span", "", `${chunk.document}, ${pageLabel(chunk)} · chunk #${chunk.index}`),
     );
     item.append(header, element("p", "chunk-text", chunk.text));
     list.append(item);
