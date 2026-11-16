@@ -9,6 +9,9 @@ CHUNK_OVERLAP = 150
 SECTION_HEADING = re.compile(r"(\d+\.(?:\d+\.?)*)\s+(.+)")
 COURSE_HEADING = re.compile(r"[A-Z]{2,4} ?\d(?:\d\d|xx)(?:/\d{3})?: .+")
 APPENDIX_HEADING = re.compile(r"APPENDIX [IVX]+")
+# Table of contents entries ("Major Requirements (56 credits) ........ 7"). They repeat headings without their
+# content, so they outrank the real sections in retrieval.
+TABLE_OF_CONTENTS_LINE = re.compile(r".*\.{4,}\s*\d+")
 COURSE_LEVEL = 10
 MAX_HEADING_LENGTH = 100
 # Words a title leaves lowercase; any other lowercase word marks a numbered sentence, not a heading.
@@ -85,6 +88,8 @@ def _sections(pages):
         body = []
         for line in page_text.splitlines():
             line = line.strip()
+            if TABLE_OF_CONTENTS_LINE.fullmatch(line):
+                continue
             level = heading_level(line)
             if level is None:
                 body.append(line)

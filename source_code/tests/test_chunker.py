@@ -46,14 +46,21 @@ def test_a_new_heading_starts_a_new_chunk_and_replaces_its_siblings():
     ]
 
 
-def test_numbered_sentences_and_table_of_contents_lines_are_not_headings():
-    page = (
-        "1. Demonstrate an understanding of fundamental computer science\n"
-        "2 ELECTIVES\n"
-        "4. Program Structure and Curriculum ........................ 6\n"
-    )
+def test_numbered_sentences_are_not_headings():
+    page = "1. Demonstrate an understanding of fundamental computer science\n2 ELECTIVES\n"
 
     assert texts([(1, page)]) == [page.strip()]
+
+
+def test_table_of_contents_lines_are_dropped():
+    page = (
+        "Contents\n"
+        "4. Program Structure and Curriculum ........................ 6\n"
+        "Major Requirements (56 credits) ............................ 7\n"
+        "7. Course Catalogue........................................ 14\n"
+    )
+
+    assert texts([(1, page)]) == ["Contents"]
 
 
 def test_text_without_headings_is_unchanged():
