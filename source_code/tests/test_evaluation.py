@@ -17,7 +17,11 @@ def write_questions(path, document):
 
 
 def test_evaluation_reports_where_each_answer_chunk_ranks(tmp_path, fake_ollama, capsys):
-    pages = ["Welcome to the major.", "Students need 128 credits to graduate.", "The cafeteria opens at noon."]
+    pages = [
+        "1. Welcome\nWelcome to the major.",
+        "2. Credits\nStudents need 128 credits to graduate.",
+        "3. Cafeteria\nThe cafeteria opens at noon.",
+    ]
     storage = tmp_path / "storage"
     ingest([str(make_pdf(tmp_path / "handbook.pdf", pages))], storage_dir=storage, ollama=fake_ollama)
     questions = write_questions(tmp_path / "questions.json", "handbook.pdf")
@@ -41,7 +45,7 @@ def test_evaluation_needs_the_document_to_be_ingested(tmp_path, fake_ollama, cap
 
 
 def test_evaluation_counts_unanswerable_questions_that_send_no_chunk(tmp_path, fake_ollama, capsys):
-    pages = ["Welcome to the major.", "Students need 128 credits to graduate."]
+    pages = ["1. Welcome\nWelcome to the major.", "2. Credits\nStudents need 128 credits to graduate."]
     storage = tmp_path / "storage"
     ingest([str(make_pdf(tmp_path / "handbook.pdf", pages))], storage_dir=storage, ollama=fake_ollama)
     questions = [

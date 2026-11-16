@@ -5,8 +5,8 @@ from rag.retrieval.keyword import keyword_scores
 from rag.web import create_app
 
 HANDBOOK_PAGES = [
-    "Welcome to the Computer Science major. The program prepares students for careers in software.",
-    "Graduation requirements: students must complete 128 credits, including the capstone project CS499.",
+    "1. Welcome\nWelcome to the Computer Science major. The program prepares students for careers in software.",
+    "2. Graduation\nGraduation requirements: students must complete 128 credits, including the capstone project CS499.",
 ]
 
 
@@ -65,7 +65,7 @@ def test_search_returns_chunks_at_or_above_threshold_best_first(client, tmp_path
 
 
 def test_chat_sends_at_most_the_top_three_chunks(client, tmp_path):
-    pages = [f"Rule {number}: students must complete {number} credits of electives." for number in range(1, 6)]
+    pages = [f"{number}. Electives\nRule {number}: students must complete {number} credits of electives." for number in range(1, 6)]
     upload(client, make_pdf(tmp_path / "rules.pdf", pages))
 
     [generation] = ask_and_log(client, "How many credits of electives must students complete?")
@@ -76,7 +76,7 @@ def test_chat_sends_at_most_the_top_three_chunks(client, tmp_path):
 
 def test_chat_only_sends_chunks_scoring_at_least_the_minimum(tmp_path, fake_ollama):
     client = create_app(storage_dir=tmp_path / "storage", ollama=fake_ollama).test_client()
-    upload(client, make_pdf(tmp_path / "handbook.pdf", ["Students need 128 credits to graduate.", "The cafeteria opens at noon."]))
+    upload(client, make_pdf(tmp_path / "handbook.pdf", ["1. Credits\nStudents need 128 credits to graduate.", "2. Cafeteria\nThe cafeteria opens at noon."]))
 
     [credits] = ask_and_log(client, "How many credits do students need to graduate?")
     assert [chunk["page"] for chunk in credits["chunks"]] == [1]

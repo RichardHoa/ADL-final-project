@@ -2,8 +2,8 @@ from conftest import make_pdf, start_upload, upload, wait_for_job
 
 
 HANDBOOK_PAGES = [
-    "Welcome to the Computer Science major. The program prepares students for careers in software.",
-    "Graduation requirements: students must complete 128 credits, including the capstone project CS499.",
+    "1. Welcome\nWelcome to the Computer Science major. The program prepares students for careers in software.",
+    "2. Graduation\nGraduation requirements: students must complete 128 credits, including the capstone project CS499.",
 ]
 
 

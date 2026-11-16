@@ -2,7 +2,7 @@
 
 **Document**: A source file (PDF or TXT) whose text the chatbot can answer from, e.g. the CS Major Handbook.
 
-**Chunk**: A short passage of a Document's text, tagged with the Document it came from and its page number, and prefixed with the headings it sits under. Chunks are the unit that retrieval returns.
+**Chunk**: A section of a Document (the text between one heading and the next), or part of one if the section is long. It is tagged with the Document it came from and the page it starts on, and prefixed with the headings it sits under. Chunks are the unit that retrieval returns.
 
 **Ingestion**: Turning a Document into Chunks and adding them to the knowledge base so they can be retrieved.
 

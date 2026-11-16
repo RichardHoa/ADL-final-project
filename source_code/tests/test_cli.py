@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 def test_ingesting_a_folder_lists_its_documents(tmp_path, fake_ollama, capsys):
     folder = tmp_path / "dataset"
     folder.mkdir()
-    make_pdf(folder / "handbook.pdf", ["The capstone project is CS499.", "Students need 128 credits."])
+    make_pdf(folder / "handbook.pdf", ["1. Capstone\nThe capstone project is CS499.", "2. Credits\nStudents need 128 credits."])
     storage = tmp_path / "storage"
 
     main([str(folder)], storage_dir=storage, ollama=fake_ollama)
@@ -32,7 +32,7 @@ def test_ingesting_a_folder_lists_its_documents(tmp_path, fake_ollama, capsys):
 def test_documents_ingested_while_the_app_is_running_are_searchable(tmp_path, fake_ollama):
     folder = tmp_path / "dataset"
     folder.mkdir()
-    make_pdf(folder / "handbook.pdf", ["The capstone project is CS499.", "Students need 128 credits."])
+    make_pdf(folder / "handbook.pdf", ["1. Capstone\nThe capstone project is CS499.", "2. Credits\nStudents need 128 credits."])
     storage = tmp_path / "storage"
     client = create_app(storage_dir=storage, ollama=fake_ollama, min_score=0).test_client()
     conversation = client.post("/api/conversations").get_json()

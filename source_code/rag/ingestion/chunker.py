@@ -1,17 +1,21 @@
 import re
+from bisect import bisect_right
 from dataclasses import dataclass
 
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 150
+# Most sections fit in one Chunk; longer ones are split, preferring paragraph breaks, then sentence ends,
+# then line breaks, then any whitespace.
+MAX_CHUNK_SIZE = 1500
+BOUNDARIES = [re.compile(pattern) for pattern in (r"\n\s*\n", r"(?<=[.!?])\s+", r"\n", r"\s+")]
 
 # Headings: numbered sections ("5.", "5.2", "5.2.2"), course descriptions ("CS302: ...", "CS 401/402: ..."),
 # and appendices. A single-level number needs its dot, so table cells like "2 ELECTIVES" don't count.
 SECTION_HEADING = re.compile(r"(\d+\.(?:\d+\.?)*)\s+(.+)")
 COURSE_HEADING = re.compile(r"[A-Z]{2,4} ?\d(?:\d\d|xx)(?:/\d{3})?: .+")
 APPENDIX_HEADING = re.compile(r"APPENDIX [IVX]+")
-# Table of contents entries ("Major Requirements (56 credits) ........ 7"). They repeat headings without their
-# content, so they outrank the real sections in retrieval.
-TABLE_OF_CONTENTS_LINE = re.compile(r".*\.{4,}\s*\d+")
+# Table of contents entries ("Major Requirements (56 credits) ........ 7"). Their titles are the Document's headings,
+# including unnumbered ones. The entries themselves repeat headings without their content, so they're dropped.
+TABLE_OF_CONTENTS_LINE = re.compile(r"(.*?)\s*\.{4,}\s*\d+")
+FOOTNOTE = re.compile(r"\s+\d+$")
 COURSE_LEVEL = 10
 MAX_HEADING_LENGTH = 100
 # Words a title leaves lowercase; any other lowercase word marks a numbered sentence, not a heading.
@@ -25,41 +29,25 @@ class Chunk:
     text: str
 
 
-def _split(text, separator_pattern):
-    return [part for part in re.split(separator_pattern, text) if part.strip()]
+def _cut(window, size):
+    """Where to end a piece within window: the last boundary of the most preferred kind, else size."""
+    for boundary in BOUNDARIES:
+        cuts = [match.start() for match in boundary.finditer(window) if match.start() > 0]
+        if cuts:
+            return cuts[-1]
+    return size
 
 
 def _pieces(text, size):
-    if len(text) <= size:
-        return [text]
-    for pattern in (r"\n\s*\n", r"(?<=[.!?])\s+", r"\s+"):
-        parts = _split(text, pattern)
-        if len(parts) > 1:
-            return [piece for part in parts for piece in _pieces(part.strip(), size)]
-    return [text[i : i + size] for i in range(0, len(text), size)]
-
-
-def _tail(text, overlap):
-    if len(text) <= overlap:
-        return text
-    cut = text[-overlap:]
-    space = cut.find(" ")
-    return cut[space + 1 :] if space != -1 else cut
-
-
-def split_text(text, size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
-    chunks = []
-    current = ""
-    for piece in _pieces(text.strip(), size - overlap):
-        candidate = f"{current} {piece}".strip() if current else piece
-        if len(candidate) <= size:
-            current = candidate
-            continue
-        chunks.append(current)
-        current = f"{_tail(current, overlap)} {piece}".strip()
-    if current:
-        chunks.append(current)
-    return chunks
+    """(offset, piece) for each piece of at most size characters, cut at the last boundary that fits, without overlap."""
+    start = len(text) - len(text.lstrip())
+    while len(text) - start > size:
+        cut = _cut(text[start : start + size + 1], size)
+        yield start, text[start : start + cut].rstrip()
+        rest = text[start + cut :]
+        start += cut + len(rest) - len(rest.lstrip())
+    if text[start:].strip():
+        yield start, text[start:].rstrip()
 
 
 def _is_title(text):
@@ -81,34 +69,77 @@ def heading_level(line):
     return None
 
 
+def _normalize(text):
+    return " ".join(text.split())
+
+
+def _table_of_contents(pages):
+    """Heading level of each table of contents title. An unnumbered title sits one level below the numbered one above it."""
+    levels = {}
+    parent = 0
+    for _, page_text in pages:
+        for line in page_text.splitlines():
+            match = TABLE_OF_CONTENTS_LINE.fullmatch(line.strip())
+            if not match:
+                continue
+            title = _normalize(match[1])
+            number = SECTION_HEADING.fullmatch(title)
+            if number:
+                parent = number[1].rstrip(".").count(".") + 1
+                levels[title] = parent
+            else:
+                levels[title] = heading_level(title) or parent + 1
+    return levels
+
+
+def _heading(line, contents):
+    """(level, title) if the line is a heading, else None. A table of contents title may carry a footnote number."""
+    level = heading_level(line)
+    if level is not None:
+        return level, line
+    line = _normalize(line)
+    for title in (line, FOOTNOTE.sub("", line)):
+        if title in contents:
+            return contents[title], title
+    return None
+
+
 def _sections(pages):
-    """(page, heading path, body) for each run of text between headings. Headings carry over to later pages."""
+    """(start page, heading path, (page, line) pairs) for each run of text between headings. Sections continue across
+    pages; text before the first heading is a section with no headings."""
+    contents = _table_of_contents(pages)
     headings = []
+    start = None
+    body = []
     for page, page_text in pages:
-        body = []
         for line in page_text.splitlines():
             line = line.strip()
             if TABLE_OF_CONTENTS_LINE.fullmatch(line):
                 continue
-            level = heading_level(line)
-            if level is None:
-                body.append(line)
+            heading = _heading(line, contents)
+            if heading is None:
+                if start is None and line:
+                    start = page
+                body.append((page, line))
                 continue
-            yield page, headings, "\n".join(body).strip()
+            yield start, headings, body
+            start = page
             body = []
-            headings = [(depth, title) for depth, title in headings if depth < level] + [(level, line)]
-        yield page, headings, "\n".join(body).strip()
+            headings = [(depth, title) for depth, title in headings if depth < heading[0]] + [heading]
+    yield start, headings, body
 
 
-def chunk_pages(source, pages, size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
-    """Chunks of each page, each prefixed with the headings it sits under so retrieval sees its context."""
+def chunk_pages(source, pages, size=MAX_CHUNK_SIZE):
+    """One Chunk per section, prefixed with the headings it sits under so retrieval sees its context. A section longer
+    than size is split into pieces; the first cites the page the section starts on, the rest the page they start on."""
     chunks = []
-    for page, headings, body in _sections(pages):
-        if not body:
-            continue
+    for start, headings, body in _sections(pages):
+        text = "\n".join(line for _, line in body)
+        line_starts = [0]
+        for _, line in body:
+            line_starts.append(line_starts[-1] + len(line) + 1)
         prefix = " > ".join(title for _, title in headings)
-        chunks += [
-            Chunk(source=source, page=page, text=f"{prefix}\n{text}" if prefix else text)
-            for text in split_text(body, size, overlap)
-        ]
+        for number, (offset, piece) in enumerate(_pieces(text, size)):
+            page = start if number == 0 else body[bisect_right(line_starts, offset) - 1][0]
+            chunks.append(Chunk(source=source, page=page, text=f"{prefix}\n{piece}" if prefix else piece))
     return chunks

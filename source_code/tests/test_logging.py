@@ -4,8 +4,8 @@ from rag.ollama_client import OllamaError
 from rag.web import create_app
 
 HANDBOOK_PAGES = [
-    "Welcome to the Computer Science major. The program prepares students for careers in software.",
-    "Graduation requirements: students must complete 128 credits, including the capstone project CS499.",
+    "1. Welcome\nWelcome to the Computer Science major. The program prepares students for careers in software.",
+    "2. Graduation\nGraduation requirements: students must complete 128 credits, including the capstone project CS499.",
 ]
 
 

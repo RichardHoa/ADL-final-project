@@ -50,18 +50,18 @@ The CLI prints each Ingestion stage as it goes (Chunks are embedded in batches o
 ```
 CS Major Handbook_2026-2027.pdf: reading pages
 CS Major Handbook_2026-2027.pdf: chunking
-CS Major Handbook_2026-2027.pdf: embedding 0/99
-CS Major Handbook_2026-2027.pdf: embedding 16/99
+CS Major Handbook_2026-2027.pdf: embedding 0/56
+CS Major Handbook_2026-2027.pdf: embedding 16/56
 ...
-CS Major Handbook_2026-2027.pdf: embedding 99/99
+CS Major Handbook_2026-2027.pdf: embedding 56/56
 CS Major Handbook_2026-2027.pdf: storing
-CS Major Handbook_2026-2027.pdf: 99 chunks
+CS Major Handbook_2026-2027.pdf: 56 chunks
 Ingested 1 document(s).
 ```
 
 You can also pass a single file, e.g. `python -m rag.ingestion "/data/CS Major Handbook_2026-2027.pdf"`. Re-ingesting a file with the same name replaces its old Chunks.
 
-Chunking splits text at headings and prefixes each Chunk with the headings it sits under, e.g. `5. Concentrations in the Computer Science Major > 5.2 Available Concentrations > 5.2.2 Artificial Intelligence`, so a list of course codes still says which concentration it belongs to. Numbered section headings (`5.`, `5.2`, `5.2.2`), course headings (`CS302: ...`) and `APPENDIX` headings are recognised. After changing chunking, reset storage and re-ingest.
+Chunking makes one Chunk per section: the text between one heading and the next, even across page breaks, citing the page where the section starts. Each Chunk is prefixed with the headings it sits under, e.g. `5. Concentrations in the Computer Science Major > 5.2 Available Concentrations > 5.2.2 Artificial Intelligence`, so a list of course codes still says which concentration it belongs to. Numbered section headings (`5.`, `5.2`, `5.2.2`), course headings (`CS302: ...`) and `APPENDIX` headings are always recognised. If the Document has a table of contents (lines like `Major Requirements (56 credits) ........ 7`), its titles are headings too, even when a body line adds a trailing footnote number; an unnumbered title nests one level below the numbered one above it, e.g. `4. Program Structure and Curriculum > Major Requirements (56 credits)`. The table of contents lines themselves are not ingested. A section longer than `MAX_CHUNK_SIZE` (1,500 characters, in `rag/ingestion/chunker.py`) is split at paragraph breaks, then sentence ends, then line breaks, then any whitespace, with no overlap; every piece keeps the heading prefix and cites the page it starts on. After changing chunking, reset storage and re-ingest.
 
 ### 3. Open the UI
 
