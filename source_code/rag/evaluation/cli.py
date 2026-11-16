@@ -8,23 +8,36 @@ DEFAULT_QUESTIONS = Path(__file__).with_name("questions.json")
 RANKINGS = ("score", "similarity", "keyword")
 
 
-def rank_of_answer(candidates, pages, key):
-    """1-based rank of the first Chunk from an expected page when ranked by key, or None if none was retrieved."""
+def normalize(text):
+    return " ".join(text.lower().split())
+
+
+def answers(chunk, item):
+    """Whether the Chunk is on an expected page and contains one of the question's evidence phrases.
+
+    A page can hold several Chunks, and only some of them carry the answer. Evidence is matched on text rather
+    than Chunk index, so it stays valid when chunking changes. Matching ignores case and whitespace.
+    """
+    text = normalize(chunk["text"])
+    return chunk["page"] in item["pages"] and any(normalize(phrase) in text for phrase in item["evidence"])
+
+
+def rank_of_answer(candidates, item, key):
+    """1-based rank of the first answering Chunk when ranked by key, or None if none was retrieved."""
     ranked = sorted(candidates, key=lambda chunk: chunk[key], reverse=True)
-    return next((rank for rank, chunk in enumerate(ranked, start=1) if chunk["page"] in pages), None)
+    return next((rank for rank, chunk in enumerate(ranked, start=1) if answers(chunk, item)), None)
 
 
 def evaluate(knowledge_base, document, questions, top_k, min_score):
     rows = []
     for item in questions:
-        pages = set(item["pages"])
         candidates = [chunk for chunk in knowledge_base.candidates(item["question"]) if chunk["document"] == document]
         kept = knowledge_base.search(item["question"], top_k, min_score)
         rows.append(
             {
                 "question": item["question"],
-                "ranks": {key: rank_of_answer(candidates, pages, key) for key in RANKINGS},
-                "kept": any(chunk["document"] == document and chunk["page"] in pages for chunk in kept),
+                "ranks": {key: rank_of_answer(candidates, item, key) for key in RANKINGS},
+                "kept": any(chunk["document"] == document and answers(chunk, item) for chunk in kept),
                 "kept_count": len(kept),
             }
         )
@@ -32,7 +45,7 @@ def evaluate(knowledge_base, document, questions, top_k, min_score):
 
 
 def main(argv=None, storage_dir=None, ollama=None):
-    parser = argparse.ArgumentParser(description="Measure how often retrieval finds the page that answers each question.")
+    parser = argparse.ArgumentParser(description="Measure how often retrieval finds the Chunk that answers each question.")
     parser.add_argument("questions", type=Path, nargs="?", default=DEFAULT_QUESTIONS, help="Questions JSON file")
     args = parser.parse_args(argv)
 
@@ -55,5 +68,5 @@ def main(argv=None, storage_dir=None, ollama=None):
     hits = {key: sum(1 for row in rows if row["ranks"][key] and row["ranks"][key] <= top_k) for key in RANKINGS}
     print()
     print(f"Hit@{top_k}: hybrid {hits['score']}/{total}, dense only {hits['similarity']}/{total}, keyword only {hits['keyword']}/{total}")
-    print(f"Answer page sent to the model (top {top_k}, score >= {min_score}): {sum(row['kept'] for row in rows)}/{total}")
+    print(f"Answer chunk sent to the model (top {top_k}, score >= {min_score}): {sum(row['kept'] for row in rows)}/{total}")
     return 0

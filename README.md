@@ -119,7 +119,7 @@ The two candidate lists are merged and each Chunk gets a Retrieval score of `0.6
 
 ### Evaluating retrieval
 
-`python -m rag.evaluation` asks the 10 questions in `source_code/rag/evaluation/questions.json`, each tagged with the handbook page(s) that answer it, and prints the rank at which each ranking (hybrid, dense only, keyword only) first finds an answer page, plus whether that page was actually sent to the model. The handbook must be ingested first. Run it after changing chunking, the score weights, `TOP_K` or `MIN_SCORE` to see whether retrieval got better or worse.
+`python -m rag.evaluation` asks the 10 questions in `source_code/rag/evaluation/questions.json`, each tagged with the handbook page(s) that answer it and one or more evidence phrases copied from the answering Chunk's text. A Chunk counts as the answer when it is on one of those pages and contains an evidence phrase (ignoring case and whitespace), so other Chunks from the same page don't count. The CLI prints the rank at which each ranking (hybrid, dense only, keyword only) first finds an answer Chunk, plus whether one was actually sent to the model. Copy evidence from the Chunk text on the RAG page rather than from the PDF viewer, since PDF extraction can change spacing. The handbook must be ingested first. Run it after changing chunking, the score weights, `TOP_K` or `MIN_SCORE` to see whether retrieval got better or worse.
 
 ## Storage
 
