@@ -54,9 +54,15 @@
         </label>
       </form>
       <p class="error" id="chunks-error" role="alert"></p>
+      <ul class="legend" aria-label="How to read the table">
+        <li class="legend__item"><span class="index index--whole" aria-hidden="true">7</span> Whole section: the row holds the complete section on its own.</li>
+        <li class="legend__item"><span class="legend__rail" aria-hidden="true"><span class="index index--split">8</span><span class="index index--split">9</span></span> Part of a long section: joined numbers continue each other, read top to bottom.</li>
+        <li class="legend__item"><span class="chunk__heading legend__heading" aria-hidden="true"><span class="chunk__crumb">Heading</span><span class="chunk__separator">›</span><span class="chunk__crumb">Subheading</span></span> Headings the chunk sits under; the section's text starts below them.</li>
+      </ul>
       <div class="table-wrap">
-        <table class="table">
-          <thead><tr><th scope="col">Document</th><th scope="col">Pages</th><th scope="col">#</th><th scope="col">Text</th></tr></thead>
+        <table class="table table--chunks">
+          <colgroup><col class="col-index"><col class="col-document"><col class="col-pages"><col></colgroup>
+          <thead><tr><th scope="col">#</th><th scope="col">Document</th><th scope="col">Pages</th><th scope="col">Chunk</th></tr></thead>
           <tbody id="chunks-body"></tbody>
         </table>
       </div>

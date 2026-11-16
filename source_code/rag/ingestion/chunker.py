@@ -27,6 +27,11 @@ class Chunk:
     source: str
     pages: tuple[int, ...]
     text: str
+    # The heading path the text is prefixed with ("" for text before the first heading), and which piece of its
+    # section this is: part 1 of parts 1 holds the whole section.
+    heading: str = ""
+    part: int = 1
+    parts: int = 1
 
 
 def _cut(window, size):
@@ -140,9 +145,19 @@ def chunk_pages(source, pages, size=MAX_CHUNK_SIZE):
         for _, line in body:
             line_starts.append(line_starts[-1] + len(line) + 1)
         prefix = " > ".join(title for _, title in headings)
-        for number, (offset, piece) in enumerate(_pieces(text, size)):
+        pieces = list(_pieces(text, size))
+        for number, (offset, piece) in enumerate(pieces):
             first = start if number == 0 else body[bisect_right(line_starts, offset) - 1][0]
             last = body[bisect_right(line_starts, offset + len(piece) - 1) - 1][0]
             pages_spanned = tuple(range(first, last + 1))
-            chunks.append(Chunk(source=source, pages=pages_spanned, text=f"{prefix}\n{piece}" if prefix else piece))
+            chunks.append(
+                Chunk(
+                    source=source,
+                    pages=pages_spanned,
+                    text=f"{prefix}\n{piece}" if prefix else piece,
+                    heading=prefix,
+                    part=number + 1,
+                    parts=len(pieces),
+                )
+            )
     return chunks

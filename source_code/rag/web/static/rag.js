@@ -1,5 +1,4 @@
 const PER_PAGE = 50;
-const PREVIEW_LENGTH = 160;
 
 const elements = {
   searchForm: document.getElementById("search-form"),
@@ -37,16 +36,68 @@ function element(tag, className, text) {
   return node;
 }
 
-// Chunks list every page they span.
-function pageLabel({ pages }) {
-  return pages.length === 1 ? `page ${pages[0]}` : `pages ${pages.join(", ")}`;
+// Chunks list every page they span, and the pages are always consecutive.
+function pageRange({ pages }) {
+  return pages.length === 1 ? String(pages[0]) : `${pages[0]}–${pages.at(-1)}`;
 }
 
-function chunkText(text) {
-  if (text.length <= PREVIEW_LENGTH) return element("p", "chunk-text", text);
-  const details = element("details", "chunk-text");
-  details.append(element("summary", "", `${text.slice(0, PREVIEW_LENGTH)}…`), element("p", "", text));
-  return details;
+function pageLabel(chunk) {
+  return `${chunk.pages.length === 1 ? "page" : "pages"} ${pageRange(chunk)}`;
+}
+
+// Chunks ingested before heading and part were recorded have neither, so their text is shown as stored.
+function hasParts(chunk) {
+  return typeof chunk.heading === "string" && Number.isInteger(chunk.part);
+}
+
+function partLabel(chunk) {
+  return chunk.parts === 1 ? "Whole section" : `Part ${chunk.part} of ${chunk.parts}`;
+}
+
+function headingTrail(heading) {
+  const trail = element("p", "chunk__heading");
+  if (!heading) {
+    trail.append(element("span", "chunk__crumb chunk__crumb--none", "Before the first heading"));
+    return trail;
+  }
+  heading.split(" > ").forEach((title, position) => {
+    if (position > 0) trail.append(element("span", "chunk__separator", "›"));
+    trail.append(element("span", "chunk__crumb", title));
+  });
+  return trail;
+}
+
+// A Chunk's text is its heading path, a newline, then the section's text: the heading is shown apart from the body.
+function chunkBlock(chunk) {
+  const block = element("div", "chunk");
+  let body = chunk.text;
+  if (hasParts(chunk)) {
+    const meta = element("div", "chunk__meta");
+    meta.append(element("span", `part part--${chunk.parts === 1 ? "whole" : "split"}`, partLabel(chunk)), headingTrail(chunk.heading));
+    block.append(meta);
+    if (chunk.heading) body = chunk.text.slice(chunk.heading.length + 1);
+  }
+  const text = element("p", "chunk__body", body);
+  const toggle = element("button", "chunk__toggle", "Show full text");
+  toggle.type = "button";
+  toggle.hidden = true;
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.addEventListener("click", () => {
+    const expanded = text.classList.toggle("chunk__body--expanded");
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded ? "Show less" : "Show full text";
+  });
+  block.append(text, toggle);
+  return block;
+}
+
+// Bodies are clamped to a few lines; only the ones actually cut off get a toggle.
+function revealToggles(container) {
+  for (const block of container.querySelectorAll(".chunk")) {
+    const body = block.querySelector(".chunk__body");
+    if (body.classList.contains("chunk__body--expanded")) continue;
+    block.querySelector(".chunk__toggle").hidden = body.scrollHeight <= body.clientHeight + 1;
+  }
 }
 
 function scoreParts(result) {
@@ -63,7 +114,7 @@ function resultItem(result) {
     ...scoreParts(result),
     element("span", "", `${result.document}, ${pageLabel(result)} · chunk #${result.index}`),
   );
-  item.append(header, chunkText(result.text));
+  item.append(header, chunkBlock(result));
   return item;
 }
 
@@ -82,6 +133,7 @@ async function search(event) {
       body: JSON.stringify({ query, threshold, max_results: Number(elements.searchMax.value) }),
     });
     elements.searchResults.replaceChildren(...results.map(resultItem));
+    revealToggles(elements.searchResults);
     elements.searchStatus.textContent = `${results.length} chunk(s) at or above score ${threshold.toFixed(2)}.`;
   } catch (failure) {
     elements.searchStatus.textContent = "";
@@ -91,11 +143,20 @@ async function search(event) {
   }
 }
 
-function chunkRow(chunk) {
-  const row = element("tr");
+// Parts of one long section that sit in adjacent rows are joined by a rail through their numbers.
+function follows(chunk, previous) {
+  return Boolean(chunk && previous) && hasParts(chunk) && chunk.part > 1 && previous.document === chunk.document && previous.index === chunk.index - 1;
+}
+
+function chunkRow(chunk, position, chunks) {
+  const row = element("tr", "chunk-row");
+  row.classList.toggle("chunk-row--joins-previous", follows(chunk, chunks[position - 1]));
+  row.classList.toggle("chunk-row--joins-next", follows(chunks[position + 1], chunk));
+  const number = element("td", "chunk-row__index");
+  number.append(element("span", `index index--${!hasParts(chunk) ? "unknown" : chunk.parts === 1 ? "whole" : "split"}`, String(chunk.index)));
   const text = element("td");
-  text.append(chunkText(chunk.text));
-  row.append(element("td", "", chunk.document), element("td", "", chunk.pages.join(", ")), element("td", "", String(chunk.index)), text);
+  text.append(chunkBlock(chunk));
+  row.append(number, element("td", "", chunk.document), element("td", "chunk-row__pages", pageRange(chunk)), text);
   return row;
 }
 
@@ -111,6 +172,7 @@ async function loadChunks() {
     const { chunks, total, page } = await request(`/api/chunks?${params}`);
     const pages = Math.max(1, Math.ceil(total / PER_PAGE));
     elements.chunksBody.replaceChildren(...chunks.map(chunkRow));
+    revealToggles(elements.chunksBody);
     elements.chunksSummary.textContent = `${total} chunk(s) · page ${page} of ${pages}`;
     elements.chunksPrev.disabled = page <= 1;
     elements.chunksNext.disabled = page >= pages;
@@ -136,6 +198,7 @@ function refilter() {
 }
 
 let filterTimer;
+let resizeTimer;
 elements.searchForm.addEventListener("submit", search);
 elements.searchThreshold.addEventListener("input", () => {
   elements.thresholdValue.textContent = Number(elements.searchThreshold.value).toFixed(2);
@@ -145,6 +208,13 @@ elements.chunksDocument.addEventListener("change", refilter);
 elements.chunksText.addEventListener("input", () => {
   clearTimeout(filterTimer);
   filterTimer = setTimeout(refilter, 250);
+});
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    revealToggles(elements.searchResults);
+    revealToggles(elements.chunksBody);
+  }, 150);
 });
 elements.chunksPrev.addEventListener("click", () => {
   chunksPage -= 1;

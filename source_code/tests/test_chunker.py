@@ -162,3 +162,15 @@ def test_a_piece_crossing_a_page_break_lists_both_pages():
     pages = [(1, f"6. Teaching, Learning, and Assessment\n{first}\n\n{second[:200]}"), (2, f"{second[200:]}\n\n{third}\n")]
 
     assert [chunk.pages for chunk in chunk_pages("handbook.pdf", pages)] == [(1, 2), (2,)]
+
+
+def test_each_chunk_records_its_heading_and_which_part_of_its_section_it_is():
+    first, second, third = ("A" * 349 + ".", "B" * 349 + ".", "C" * 349 + ".")
+    pages = [(1, f"Cover page\n6. Teaching, Learning, and Assessment\n{first}\n\n{second}\n\n{third}\n7. Policies\nBe kind.")]
+
+    assert [(chunk.heading, chunk.part, chunk.parts) for chunk in chunk_pages("handbook.pdf", pages)] == [
+        ("", 1, 1),
+        ("6. Teaching, Learning, and Assessment", 1, 2),
+        ("6. Teaching, Learning, and Assessment", 2, 2),
+        ("7. Policies", 1, 1),
+    ]

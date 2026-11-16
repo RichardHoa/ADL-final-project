@@ -22,6 +22,12 @@ def test_every_chunk_is_listed_and_can_be_filtered(client, tmp_path):
         ("notes.pdf", [1], 0),
     ]
 
+    assert [(c["heading"], c["part"], c["parts"]) for c in listed["chunks"]] == [
+        ("1. Welcome", 1, 1),
+        ("2. Graduation", 1, 1),
+        ("", 1, 1),
+    ]
+
     by_document = client.get("/api/chunks?document=notes.pdf").get_json()
     assert [c["text"] for c in by_document["chunks"]] == ["Office hours are on Tuesday."]
 

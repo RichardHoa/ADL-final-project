@@ -650,6 +650,141 @@
     font-size: var(--font-size-small);
   }
 
+  /* A Chunk: its part and heading path, then the section's text, clamped until expanded. */
+  .chunk {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-inline-size: 0;
+  }
+
+  .chunk__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .chunk__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1);
+    color: var(--color-muted);
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .chunk__crumb--none { font-style: italic; font-weight: 400; }
+
+  .chunk__separator { color: var(--color-border-strong); }
+
+  .chunk__body {
+    padding-inline-start: var(--space-3);
+    border-inline-start: 2px solid var(--color-border-strong);
+    color: var(--color-text);
+    font-size: var(--font-size-small);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .chunk__body:not(.chunk__body--expanded) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow: hidden;
+  }
+
+  .chunk__toggle {
+    align-self: flex-start;
+    padding: 0;
+    margin-inline-start: var(--space-3);
+    border: 0;
+    border-radius: var(--radius-1);
+    background: none;
+    color: var(--color-accent);
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .chunk__toggle:hover { text-decoration: underline; }
+
+  .part {
+    padding: calc(var(--space-1) / 2) var(--space-2);
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .part--whole {
+    background: var(--color-hover);
+    color: var(--color-muted);
+  }
+
+  .part--split {
+    background: var(--color-user);
+    color: var(--color-accent);
+  }
+
+  /* Chunk numbers: filled for a whole section, outlined for part of a longer one. */
+  .index {
+    position: relative;
+    z-index: 1;
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 1.75rem;
+    block-size: 1.75rem;
+    padding-inline: var(--space-1);
+    border: 2px solid transparent;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .index--whole {
+    background: var(--color-hover);
+    color: var(--color-text);
+  }
+
+  .index--split {
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+    color: var(--color-accent);
+  }
+
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-1);
+    background: var(--color-bg);
+    color: var(--color-muted);
+    font-size: var(--font-size-small);
+  }
+
+  .legend__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .legend__rail {
+    display: inline-flex;
+    gap: var(--space-3);
+    background: linear-gradient(var(--color-accent), var(--color-accent)) center / 100% 2px no-repeat;
+  }
+
+  .legend__heading { display: inline-flex; }
+
   .table-wrap {
     overflow: auto;
     scrollbar-width: thin;
@@ -682,6 +817,49 @@
   .table :where(tbody tr:hover) { background: var(--color-hover); }
 
   .table--data :where(td) { font-family: var(--font-mono); }
+
+  .table--chunks { table-layout: fixed; }
+
+  .table--chunks .col-index { inline-size: 4rem; }
+
+  .table--chunks .col-document { inline-size: 10rem; }
+
+  .table--chunks .col-pages { inline-size: 5rem; }
+
+  .table--chunks :where(th:first-child) { text-align: center; }
+
+  .chunk-row__index {
+    position: relative;
+    text-align: center;
+  }
+
+  .chunk-row__pages {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* The rail joining the numbers of adjacent parts runs through the centre of each pill (cell padding + half a pill). */
+  .chunk-row:is(.chunk-row--joins-previous, .chunk-row--joins-next) > .chunk-row__index::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: calc(50% - 1px);
+    inset-block: 0;
+    inline-size: 2px;
+    background: var(--color-accent);
+  }
+
+  .chunk-row:not(.chunk-row--joins-previous) > .chunk-row__index::before { inset-block-start: calc(var(--space-2) + 0.875rem); }
+
+  .chunk-row:not(.chunk-row--joins-next) > .chunk-row__index::before { inset-block-end: calc(100% - var(--space-2) - 0.875rem); }
+
+  /* Parts of one section read as a group: a faint tint and a dashed divider between them. */
+  .chunk-row:is(.chunk-row--joins-previous, .chunk-row--joins-next) {
+    background: color-mix(in oklch, var(--color-accent) 4%, transparent);
+  }
+
+  .table--chunks .chunk-row:hover { background: var(--color-hover); }
+
+  .chunk-row--joins-next > td { border-block-end-style: dashed; }
 
   .pager {
     display: flex;

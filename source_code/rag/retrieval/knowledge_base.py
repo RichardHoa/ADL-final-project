@@ -56,7 +56,16 @@ class KnowledgeBase:
                     ids=[self._chunk_id(name, index) for index in range(len(chunks))],
                     embeddings=embeddings,
                     documents=[chunk.text for chunk in chunks],
-                    metadatas=[{"source": chunk.source, "pages": ",".join(map(str, chunk.pages))} for chunk in chunks],
+                    metadatas=[
+                        {
+                            "source": chunk.source,
+                            "pages": ",".join(map(str, chunk.pages)),
+                            "heading": chunk.heading,
+                            "part": chunk.part,
+                            "parts": chunk.parts,
+                        }
+                        for chunk in chunks
+                    ],
                 )
         return {"name": name, "chunks": len(chunks)}
 
@@ -123,7 +132,16 @@ class KnowledgeBase:
     def _record(chunk_id, text, metadata):
         index = int(chunk_id.rsplit("-", 1)[1])
         pages = [int(page) for page in metadata["pages"].split(",")]
-        return {"document": metadata["source"], "pages": pages, "index": index, "text": text}
+        # Chunks ingested before heading and part were recorded have neither; re-ingest the Document to get them.
+        return {
+            "document": metadata["source"],
+            "pages": pages,
+            "index": index,
+            "text": text,
+            "heading": metadata.get("heading"),
+            "part": metadata.get("part"),
+            "parts": metadata.get("parts"),
+        }
 
 
 def _cosine(a, b):
