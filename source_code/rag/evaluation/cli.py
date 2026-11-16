@@ -15,6 +15,8 @@ def normalize(text):
 def answers(chunk, item):
     """Whether the Chunk is on an expected page and contains one of the question's evidence phrases.
 
+    Unanswerable questions have no pages, so no Chunk answers them.
+
     A page can hold several Chunks, and only some of them carry the answer. Evidence is matched on text rather
     than Chunk index, so it stays valid when chunking changes. Matching ignores case and whitespace.
     """
@@ -39,6 +41,7 @@ def evaluate(knowledge_base, document, questions, top_k, min_score):
                 "ranks": {key: rank_of_answer(candidates, item, key) for key in RANKINGS},
                 "kept": any(chunk["document"] == document and answers(chunk, item) for chunk in kept),
                 "kept_count": len(kept),
+                "answerable": bool(item["pages"]),
             }
         )
     return rows
@@ -64,9 +67,14 @@ def main(argv=None, storage_dir=None, ollama=None):
         sent = f"{'yes' if row['kept'] else 'no'}/{row['kept_count']}"
         print(f"{number:>2}  {ranks[0]:>6}  {ranks[1]:>5}  {ranks[2]:>7}  {sent:>4}  {row['question']}")
 
-    total = len(rows)
-    hits = {key: sum(1 for row in rows if row["ranks"][key] and row["ranks"][key] <= top_k) for key in RANKINGS}
+    answerable = [row for row in rows if row["answerable"]]
+    unanswerable = [row for row in rows if not row["answerable"]]
+    total = len(answerable)
+    hits = {key: sum(1 for row in answerable if row["ranks"][key] and row["ranks"][key] <= top_k) for key in RANKINGS}
     print()
     print(f"Hit@{top_k}: hybrid {hits['score']}/{total}, dense only {hits['similarity']}/{total}, keyword only {hits['keyword']}/{total}")
-    print(f"Answer chunk sent to the model (top {top_k}, score >= {min_score}): {sum(row['kept'] for row in rows)}/{total}")
+    print(f"Answer chunk sent to the model (top {top_k}, score >= {min_score}): {sum(row['kept'] for row in answerable)}/{total}")
+    if unanswerable:
+        rejected = sum(1 for row in unanswerable if row["kept_count"] == 0)
+        print(f"Unanswerable questions with no Chunk sent to the model (score >= {min_score}): {rejected}/{len(unanswerable)}")
     return 0

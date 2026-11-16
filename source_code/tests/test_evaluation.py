@@ -38,3 +38,26 @@ def test_evaluation_needs_the_document_to_be_ingested(tmp_path, fake_ollama, cap
 
     assert main([str(questions)], storage_dir=tmp_path / "storage", ollama=fake_ollama) == 1
     assert "handbook.pdf is not in the knowledge base" in capsys.readouterr().out
+
+
+def test_evaluation_counts_unanswerable_questions_that_send_no_chunk(tmp_path, fake_ollama, capsys):
+    pages = ["Welcome to the major.", "Students need 128 credits to graduate."]
+    storage = tmp_path / "storage"
+    ingest([str(make_pdf(tmp_path / "handbook.pdf", pages))], storage_dir=storage, ollama=fake_ollama)
+    questions = [
+        {"question": "How many credits do students need to graduate?", "pages": [2], "evidence": ["128 credits"]},
+        {"question": "Who designed the logo?", "pages": [], "evidence": []},
+        # Shares words with page 2, so it scores above the minimum even though page 2 doesn't answer it.
+        {"question": "How many students need credits?", "pages": [], "evidence": []},
+    ]
+    path = tmp_path / "questions.json"
+    path.write_text(json.dumps({"document": "handbook.pdf", "questions": questions}))
+    capsys.readouterr()
+
+    assert main([str(path)], storage_dir=storage, ollama=fake_ollama) == 0
+
+    output = capsys.readouterr().out
+    assert "Hit@3: hybrid 1/1" in output
+    assert "Answer chunk sent to the model (top 3, score >= 0.4): 1/1" in output
+    assert " 3       -      -        -  no/1  How many students need credits?" in output
+    assert "Unanswerable questions with no Chunk sent to the model (score >= 0.4): 1/2" in output

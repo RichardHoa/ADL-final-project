@@ -60,6 +60,102 @@
         "Software engineer",
         "Testing engineer"
       ]
+    },
+    {
+      "question": "Can I graduate with honors if I skip the capstone?",
+      "pages": [9],
+      "evidence": ["two more intermediate or advanced courses to graduate without honors"]
+    },
+    {
+      "question": "How many of my exploratory courses can also count toward the major?",
+      "pages": [7],
+      "evidence": ["up to 2 courses (8 credits) can be counted toward the major"]
+    },
+    {
+      "question": "How many Computer Science courses do I need before declaring a minor?",
+      "pages": [8],
+      "evidence": ["declare a minor in Computer Science, the student must complete at least one"]
+    },
+    {
+      "question": "Which concentration does CS210 Computer Networks count toward?",
+      "pages": [12],
+      "evidence": ["CS210 Computer Networks"]
+    },
+    {
+      "question": "What do I have to take before Advanced Deep Learning?",
+      "pages": [15, 21],
+      "evidence": [
+        "CS311 Advanced Deep Learning Once a year CS313",
+        "Prerequisites: CS313"
+      ]
+    },
+    {
+      "question": "Is Computer Networks offered every year?",
+      "pages": [15],
+      "evidence": ["CS210 Computer Networks On holding"]
+    },
+    {
+      "question": "What do I need before I can take Computer Security?",
+      "pages": [15, 20],
+      "evidence": [
+        "CS306 Computer Security On holding CS211",
+        "Prerequisites: CS211"
+      ]
+    },
+    {
+      "question": "Which tools do students use for the project in the database course?",
+      "pages": [20],
+      "evidence": ["using PHP and MySQL"]
+    },
+    {
+      "question": "Which universities' programs was the CS curriculum modelled on?",
+      "pages": [23],
+      "evidence": ["Carnegie Mellon University"]
+    },
+    {
+      "question": "What platform do students build apps for in Software Construction?",
+      "pages": [18],
+      "evidence": ["building Android applications using Java"]
+    },
+    {
+      "question": "How much is the tuition fee for the Computer Science major?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "Who is the head of the Computer Science department?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "What is the minimum GPA required to graduate with a Computer Science degree?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "Which programming language is taught in CS101 Introduction to Programming?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "What are the prerequisites for CS305?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "Does Fulbright offer a Master's degree in Computer Science?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "What is the deadline for declaring the Computer Science major?",
+      "pages": [],
+      "evidence": []
+    },
+    {
+      "question": "How many students are admitted to the Computer Science major each year?",
+      "pages": [],
+      "evidence": []
     }
   ]
 }
